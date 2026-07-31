@@ -13,4 +13,4 @@ Interface React pour la gestion de boutique.
 3. App disponible sur `http://localhost:5173`
 
 ## Projet lié
-Backend : https://github.com/TON_USERNAME/sellam-store-backend
+Backend : https://github.com/nelsonkonga/sellam-store-backend
