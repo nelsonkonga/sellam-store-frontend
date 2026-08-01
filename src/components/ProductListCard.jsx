@@ -17,9 +17,9 @@ export default function ProductListCard({ product, onClick }) {
   return (
     <div
       onClick={onClick}
-      className="flex cursor-pointer items-center gap-3 rounded-2xl bg-white p-3
-                 shadow-sm ring-1 ring-gray-100 transition hover:shadow-md
-                 active:scale-[0.99] dark:bg-gray-900 dark:ring-gray-800"
+      className="flex cursor-pointer items-center gap-3 rounded-2xl glass p-3
+                 shadow-sm transition hover:shadow-md
+                 active:scale-[0.99]"
     >
       {product.pictureUrl ? (
         <img
@@ -31,17 +31,17 @@ export default function ProductListCard({ product, onClick }) {
       ) : (
         <div
           className="flex h-14 w-14 flex-shrink-0 items-center justify-center
-                     rounded-xl bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500"
+                     rounded-xl bg-white/5 text-gray-400"
         >
           <Package size={22} />
         </div>
       )}
 
       <div className="min-w-0 flex-1">
-        <p className="truncate font-semibold text-gray-900 dark:text-white">
+        <p className="truncate font-semibold text-white">
           {product.name}
         </p>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <p className="text-sm text-brand-400">
           {currencyFormatter.format(product.sellingPrice || 0)}
         </p>
       </div>
@@ -49,8 +49,8 @@ export default function ProductListCard({ product, onClick }) {
       <span
         className={`flex-shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
           isLowStock
-            ? "bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-400"
-            : "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400"
+            ? "bg-red-500/10 text-red-500"
+            : "bg-brand-500/10 text-brand-400"
         }`}
       >
         {product.stockQuantity}

@@ -47,7 +47,7 @@ export default function AuthPage() {
       const data = isLogin ? await login(payload) : await register(payload);
 
       // Stocke token/accountId/name dans le contexte global + localStorage
-      loginContext(data);
+      loginContext({ ...data, phoneNumber: data.phoneNumber });
 
       // Redirection vers la liste des boutiques
       navigate("/shops");
@@ -73,7 +73,7 @@ export default function AuthPage() {
   return (
     <div
       className="flex min-h-screen flex-col items-center justify-center
-                 bg-gray-50 px-5 py-10 dark:bg-gray-950"
+                 bg-hero-gradient px-5 py-10 text-white"
     >
       {/* Bouton mode sombre, accessible depuis l'écran d'auth */}
       <div className="mb-4 flex w-full max-w-sm justify-end">
@@ -85,22 +85,21 @@ export default function AuthPage() {
         <div className="mb-8 flex flex-col items-center gap-2">
           <div
             className="flex h-16 w-16 items-center justify-center rounded-2xl
-                       bg-emerald-500 text-2xl font-bold text-white shadow-md"
+                       btn-gradient text-2xl font-bold text-white shadow-xl glow-purple"
           >
             🛍️
           </div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-2xl font-bold text-white">
             ShopManager
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-gray-300">
             Gérez vos boutiques facilement
           </p>
         </div>
 
         {/* Carte du formulaire */}
         <div
-          className="rounded-2xl bg-white p-6 shadow-lg
-                     dark:bg-gray-900 dark:shadow-none dark:ring-1 dark:ring-gray-800"
+          className="rounded-2xl glass p-6 shadow-xl"
         >
           {/* Toggle Connexion / Inscription */}
           <div
@@ -114,8 +113,8 @@ export default function AuthPage() {
               onClick={() => mode !== MODES.LOGIN && toggleMode()}
               className={`flex-1 rounded-lg py-2 text-sm font-semibold transition ${
                 isLogin
-                  ? "bg-white text-emerald-600 shadow-sm dark:bg-gray-700 dark:text-emerald-400"
-                  : "text-gray-500 dark:text-gray-400"
+                  ? "bg-white/10 text-white shadow-sm"
+                  : "text-gray-400"
               }`}
             >
               Connexion
@@ -127,8 +126,8 @@ export default function AuthPage() {
               onClick={() => mode !== MODES.REGISTER && toggleMode()}
               className={`flex-1 rounded-lg py-2 text-sm font-semibold transition ${
                 !isLogin
-                  ? "bg-white text-emerald-600 shadow-sm dark:bg-gray-700 dark:text-emerald-400"
-                  : "text-gray-500 dark:text-gray-400"
+                  ? "bg-white/10 text-white shadow-sm"
+                  : "text-gray-400"
               }`}
             >
               Inscription
@@ -173,7 +172,7 @@ export default function AuthPage() {
               <div className="-mt-2 flex justify-end">
                 <Link
                   to="/forgot-password"
-                  className="text-sm font-medium text-emerald-600 hover:underline dark:text-emerald-400"
+                  className="text-sm font-medium text-brand-400 hover:underline"
                 >
                   Mot de passe oublié ?
                 </Link>
@@ -195,10 +194,9 @@ export default function AuthPage() {
             <button
               type="submit"
               disabled={loading}
-              className="mt-2 w-full rounded-xl bg-emerald-500 py-3.5 text-base font-semibold
-                         text-white shadow-md transition hover:bg-emerald-600
-                         disabled:cursor-not-allowed disabled:opacity-60
-                         dark:bg-emerald-600 dark:hover:bg-emerald-500"
+              className="mt-2 w-full rounded-xl btn-gradient py-3.5 text-base font-semibold
+                         text-white shadow-md transition
+                         disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading
                 ? "Veuillez patienter..."
@@ -208,11 +206,10 @@ export default function AuthPage() {
             </button>
           </form>
 
-          {/* Séparateur */}
           <div className="my-6 flex items-center gap-3">
-            <div className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
-            <span className="text-xs text-gray-400 dark:text-gray-500">ou</span>
-            <div className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
+            <div className="h-px flex-1 bg-white/10" />
+            <span className="text-xs text-gray-500">ou</span>
+            <div className="h-px flex-1 bg-white/10" />
           </div>
 
           {/* Bouton Google OAuth — désactivé pour l'instant, avec tooltip natif */}
@@ -221,9 +218,8 @@ export default function AuthPage() {
             disabled
             title="Bientôt disponible"
             className="flex w-full cursor-not-allowed items-center justify-center gap-2
-                       rounded-xl border border-gray-300 bg-gray-50 py-3 text-sm font-medium
-                       text-gray-400 opacity-70
-                       dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500"
+                       rounded-xl border border-white/10 bg-white/5 py-3 text-sm font-medium
+                       text-gray-400 opacity-70"
           >
             <GoogleIcon />
             Se connecter avec Google
@@ -234,12 +230,12 @@ export default function AuthPage() {
         </div>
 
         {/* Lien de bascule sous la carte, pratique en plus du toggle */}
-        <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
+        <p className="mt-6 text-center text-sm text-gray-400">
           {isLogin ? "Pas encore de compte ?" : "Déjà un compte ?"}{" "}
           <button
             type="button"
             onClick={toggleMode}
-            className="font-semibold text-emerald-600 hover:underline dark:text-emerald-400"
+            className="font-semibold text-brand-400 hover:underline"
           >
             {isLogin ? "Inscrivez-vous" : "Connectez-vous"}
           </button>

@@ -9,13 +9,13 @@ import ThemeSelector from "../components/ThemeSelector";
 import BottomNav from "../components/BottomNav";
 
 export default function ProfileSettingsPage() {
-  const [profilePicturePreview, setProfilePicturePreview] = useState("");
+  const [profilePicturePreview, setProfilePicturePreview] = useState(() => localStorage.getItem("profilePicturePreview") || "");
   const [selectedFile, setSelectedFile] = useState(null); // gardé pour un futur upload réel
   const [themeSaving, setThemeSaving] = useState(false);
   const [themeError, setThemeError] = useState("");
 
   const navigate = useNavigate();
-  const { name, logout } = useAuth();
+  const { name, logout, phoneNumber, profilePictureUrl } = useAuth();
   const { theme, setTheme } = useTheme();
 
   // Preview locale uniquement pour l'instant — voir updateProfilePicture(file)
@@ -23,7 +23,10 @@ export default function ProfileSettingsPage() {
   function handlePictureSelect(file) {
     setSelectedFile(file);
     const reader = new FileReader();
-    reader.onload = () => setProfilePicturePreview(reader.result);
+    reader.onload = () => {
+      setProfilePicturePreview(reader.result);
+      localStorage.setItem("profilePicturePreview", reader.result);
+    };
     reader.readAsDataURL(file);
     // NOTE: appeler ici updateProfilePicture(file) une fois l'endpoint prêt
   }
@@ -53,25 +56,25 @@ export default function ProfileSettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 dark:bg-gray-950">
-      <header className="px-5 pb-4 pt-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+    <div className="min-h-screen bg-section-alt pb-24 text-white">
+      <header className="px-5 pb-4 pt-6 mx-auto max-w-5xl">
+        <h1 className="text-2xl font-bold text-white">
           Paramètres
         </h1>
       </header>
 
-      <main className="flex flex-col gap-5 px-5">
+      <main className="flex flex-col gap-5 px-5 mx-auto max-w-5xl">
         {/* Photo de profil */}
-        <div className="flex flex-col items-center rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-100 dark:bg-gray-900 dark:ring-gray-800">
+        <div className="flex flex-col items-center rounded-2xl glass p-6 shadow-sm">
           <ProfilePictureUpload
-            previewUrl={profilePicturePreview}
+            previewUrl={profilePicturePreview || profilePictureUrl}
             userName={name}
             onFileSelect={handlePictureSelect}
           />
         </div>
 
         {/* Informations du compte */}
-        <div className="flex flex-col gap-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100 dark:bg-gray-900 dark:ring-gray-800">
+        <div className="flex flex-col gap-4 rounded-2xl glass p-5 shadow-sm">
           <div>
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Nom du compte
@@ -82,9 +85,8 @@ export default function ProfileSettingsPage() {
               type="text"
               value={name || ""}
               readOnly
-              className="mt-1.5 w-full cursor-not-allowed rounded-xl border border-gray-200
-                         bg-gray-50 px-4 py-3 text-base text-gray-500
-                         dark:border-gray-700 dark:bg-gray-800/50 dark:text-gray-400"
+              className="mt-1.5 w-full cursor-not-allowed rounded-xl border border-white/10
+                         glass-strong px-4 py-3 text-base text-gray-400"
             />
           </div>
 
@@ -94,18 +96,17 @@ export default function ProfileSettingsPage() {
             </label>
             <input
               type="tel"
-              value={"Non renseigné"}
+              value={phoneNumber || "Non renseigné"}
               readOnly
-              className="mt-1.5 w-full cursor-not-allowed rounded-xl border border-gray-200
-                         bg-gray-50 px-4 py-3 text-base text-gray-500
-                         dark:border-gray-700 dark:bg-gray-800/50 dark:text-gray-400"
+              className="mt-1.5 w-full cursor-not-allowed rounded-xl border border-white/10
+                         glass-strong px-4 py-3 text-base text-gray-400"
             />
           </div>
         </div>
 
         {/* Sélecteur de thème */}
-        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100 dark:bg-gray-900 dark:ring-gray-800">
-          <p className="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+        <div className="rounded-2xl glass p-5 shadow-sm">
+          <p className="mb-3 text-sm font-medium text-gray-300">
             Apparence
           </p>
           <ThemeSelector
@@ -121,34 +122,33 @@ export default function ProfileSettingsPage() {
         {/* Lien vers les réglages du bilan journalier (heure + rappels) */}
         <Link
           to="/settings/balance"
-          className="flex items-center gap-3 rounded-2xl bg-white p-5 shadow-sm ring-1
-                     ring-gray-100 transition hover:shadow-md dark:bg-gray-900 dark:ring-gray-800"
+          className="flex items-center gap-3 rounded-2xl glass p-5 shadow-sm transition hover:shadow-md"
         >
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-500/10 text-brand-400">
             <Clock size={18} />
           </div>
           <div className="flex-1">
-            <p className="font-medium text-gray-900 dark:text-white">
+            <p className="font-medium text-white">
               Réglages du bilan
             </p>
-            <p className="text-xs text-gray-400 dark:text-gray-500">
+            <p className="text-xs text-gray-400">
               Heure et rappels par jour
             </p>
           </div>
-          <ChevronRight size={18} className="text-gray-300 dark:text-gray-600" />
+          <ChevronRight size={18} className="text-gray-500" />
         </Link>
 
         {/* Gestion des employés — pas encore disponible */}
-        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100 opacity-75 dark:bg-gray-900 dark:ring-gray-800">
+        <div className="rounded-2xl glass p-5 shadow-sm opacity-75">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-gray-500">
               <Users size={18} />
             </div>
             <div className="flex-1">
-              <p className="font-medium text-gray-700 dark:text-gray-300">
+              <p className="font-medium text-gray-300">
                 Gestion des employés
               </p>
-              <p className="text-xs text-gray-400 dark:text-gray-500">
+              <p className="text-xs text-gray-500">
                 Bientôt disponible
               </p>
             </div>
@@ -157,8 +157,8 @@ export default function ProfileSettingsPage() {
             type="button"
             disabled
             title="Bientôt disponible"
-            className="mt-3 w-full cursor-not-allowed rounded-xl bg-gray-100 py-2.5 text-sm
-                       font-medium text-gray-400 dark:bg-gray-800 dark:text-gray-500"
+            className="mt-3 w-full cursor-not-allowed rounded-xl bg-white/5 py-2.5 text-sm
+                       font-medium text-gray-500"
           >
             Gérer les employés
           </button>

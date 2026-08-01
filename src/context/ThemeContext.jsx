@@ -21,11 +21,12 @@ function applyTheme(theme) {
  * un rechargement de page revient donc à 'system' par défaut, volontairement.
  */
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(THEMES.SYSTEM);
+  const [theme, setTheme] = useState(() => localStorage.getItem("theme") || THEMES.DARK);
 
   // Applique le thème à chaque changement de préférence
   useEffect(() => {
     applyTheme(theme);
+    localStorage.setItem("theme", theme);
   }, [theme]);
 
   // En mode "system", réagit aux changements de préférence OS en direct

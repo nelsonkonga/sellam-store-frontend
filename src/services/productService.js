@@ -1,5 +1,15 @@
 import api from "./api";
 
+export async function getSaleTypes(shopId) {
+  const response = await api.get("/sale-types", { params: { shopId } });
+  return response.data;
+}
+
+export async function createSaleType(shopId, data) {
+  const response = await api.post("/sale-types", data, { params: { shopId } });
+  return response.data;
+}
+
 /**
  * Récupère la liste des produits d'une boutique.
  * @param {string} shopId

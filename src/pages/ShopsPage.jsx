@@ -89,18 +89,18 @@ export default function ShopsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 dark:bg-gray-950">
+    <div className="min-h-screen bg-section-alt pb-24 text-white">
       {/* En-tête */}
-      <header className="px-5 pb-4 pt-8">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+      <header className="px-5 pb-4 pt-8 mx-auto max-w-5xl">
+        <h1 className="text-2xl font-bold text-white">
           Mes boutiques
         </h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        <p className="mt-1 text-sm text-gray-300">
           Choisissez une boutique pour continuer
         </p>
       </header>
 
-      <main className="flex flex-col gap-3 px-5">
+      <main className="flex flex-col gap-3 px-5 mx-auto max-w-5xl">
         {loading && (
           <p className="mt-10 text-center text-sm text-gray-400 dark:text-gray-500">
             Chargement de vos boutiques...
@@ -118,12 +118,12 @@ export default function ShopsPage() {
         )}
 
         {!loading && !error && shops.length === 0 && (
-          <div className="mt-16 flex flex-col items-center gap-3 text-center">
+          <div className="mt-16 flex flex-col items-center gap-3 text-center glass p-8 rounded-2xl">
             <span className="text-4xl">🏪</span>
-            <p className="font-medium text-gray-700 dark:text-gray-300">
+            <p className="font-medium text-white">
               Vous n'avez encore aucune boutique
             </p>
-            <p className="text-sm text-gray-400 dark:text-gray-500">
+            <p className="text-sm text-gray-300">
               Appuyez sur le bouton "+" pour créer votre première boutique
             </p>
           </div>
@@ -146,10 +146,9 @@ export default function ShopsPage() {
         type="button"
         onClick={() => setShowCreateModal(true)}
         aria-label="Créer une boutique"
-        className="fixed bottom-6 right-6 flex h-14 w-14 items-center justify-center
-                   rounded-full bg-emerald-500 text-3xl font-light text-white shadow-lg
-                   transition hover:bg-emerald-600 active:scale-95
-                   dark:bg-emerald-600 dark:hover:bg-emerald-500"
+        className="fixed bottom-6 right-6 md:right-10 md:bottom-10 flex h-16 w-16 items-center justify-center
+                   rounded-full btn-gradient text-3xl font-light text-white shadow-xl
+                   transition active:scale-95 glow-purple"
       >
         +
       </button>
@@ -212,10 +211,9 @@ export default function ShopsPage() {
             <button
               type="submit"
               disabled={creating}
-              className="mt-2 w-full rounded-xl bg-emerald-500 py-3.5 text-base font-semibold
-                         text-white shadow-md transition hover:bg-emerald-600
-                         disabled:cursor-not-allowed disabled:opacity-60
-                         dark:bg-emerald-600 dark:hover:bg-emerald-500"
+              className="mt-2 w-full rounded-xl btn-gradient py-3.5 text-base font-semibold
+                         text-white shadow-md transition
+                         disabled:cursor-not-allowed disabled:opacity-60"
             >
               {creating ? "Création en cours..." : "Créer la boutique"}
             </button>

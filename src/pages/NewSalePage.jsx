@@ -122,9 +122,9 @@ export default function NewSalePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen bg-section-dark text-white">
       {/* En-tête */}
-      <header className="flex items-center gap-3 px-5 pb-4 pt-6">
+      <header className="flex items-center gap-3 px-5 pb-4 pt-6 mx-auto max-w-5xl">
         <button
           type="button"
           onClick={() => navigate("/dashboard")}
@@ -135,12 +135,12 @@ export default function NewSalePage() {
         >
           <ArrowLeft size={20} />
         </button>
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-xl font-bold text-white">
           Nouvelle vente
         </h1>
       </header>
 
-      <main className="px-5 pb-10">
+      <main className="px-5 pb-10 mx-auto max-w-5xl">
         {/* Recherche + scanner code-barres côte à côte */}
         <div className="flex items-center gap-2">
           <div className="flex-1">
@@ -155,9 +155,8 @@ export default function NewSalePage() {
             onClick={() => setShowScannerPlaceholder(true)}
             aria-label="Scanner un code-barres"
             className="flex h-[50px] w-[50px] flex-shrink-0 items-center justify-center
-                       rounded-xl bg-gray-100 text-gray-600 shadow-sm transition
-                       hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300
-                       dark:hover:bg-gray-700"
+                       rounded-xl glass text-gray-400 shadow-sm transition
+                       hover:bg-white/10"
           >
             <Camera size={20} />
           </button>
@@ -207,11 +206,11 @@ export default function NewSalePage() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-sm rounded-t-2xl bg-white p-5 shadow-xl
-                       dark:bg-gray-900 dark:ring-1 dark:ring-gray-800 sm:rounded-2xl"
+            className="w-full max-w-sm rounded-t-2xl glass-strong p-5 shadow-xl
+                       sm:rounded-2xl"
           >
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+              <h2 className="text-lg font-bold text-white">
                 Quantité
               </h2>
               <button
@@ -219,7 +218,7 @@ export default function NewSalePage() {
                 onClick={closeKeypad}
                 aria-label="Fermer"
                 className="flex h-8 w-8 items-center justify-center rounded-full
-                           text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                           text-gray-400 hover:bg-white/10"
               >
                 <X size={18} />
               </button>
@@ -245,10 +244,9 @@ export default function NewSalePage() {
               type="button"
               onClick={handleConfirmSale}
               disabled={confirming}
-              className="mt-4 w-full rounded-xl bg-emerald-500 py-4 text-base font-bold
-                         text-white shadow-md transition hover:bg-emerald-600
-                         disabled:cursor-not-allowed disabled:opacity-60
-                         dark:bg-emerald-600 dark:hover:bg-emerald-500"
+              className="mt-4 w-full rounded-xl btn-gradient py-4 text-base font-bold
+                         text-white shadow-md transition
+                         disabled:cursor-not-allowed disabled:opacity-60"
             >
               {confirming ? "Enregistrement..." : "Confirmer la vente"}
             </button>
@@ -264,22 +262,20 @@ export default function NewSalePage() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl
-                       dark:bg-gray-900 dark:ring-1 dark:ring-gray-800"
+            className="w-full max-w-sm rounded-2xl glass-strong p-6 text-center shadow-xl"
           >
-            <Camera className="mx-auto mb-3 text-gray-300 dark:text-gray-600" size={40} />
-            <p className="font-semibold text-gray-900 dark:text-white">
+            <Camera className="mx-auto mb-3 text-gray-400" size={40} />
+            <p className="font-semibold text-white">
               Scanner un code-barres
             </p>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            <p className="mt-1 text-sm text-gray-300">
               Fonctionnalité à venir
             </p>
             <button
               type="button"
               onClick={() => setShowScannerPlaceholder(false)}
-              className="mt-4 w-full rounded-xl bg-gray-100 py-3 text-sm font-medium
-                         text-gray-700 transition hover:bg-gray-200
-                         dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+              className="mt-4 w-full rounded-xl bg-white/10 py-3 text-sm font-medium
+                         text-white transition hover:bg-white/20"
             >
               Fermer
             </button>

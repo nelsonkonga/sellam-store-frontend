@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import LandingPage from "./pages/LandingPage";
 import { AuthProvider } from "./context/AuthContext";
 import { ShopProvider } from "./context/ShopContext";
 import { ThemeProvider } from "./context/ThemeContext";
@@ -38,7 +39,7 @@ export default function App() {
                         <BrowserRouter>
                             <Routes>
                                 {/* Routes publiques */}
-                                <Route path="/" element={<Navigate to="/login" replace />} />
+                                <Route path="/" element={<LandingPage />} />
                                 <Route path="/login" element={<AuthPage />} />
                                 <Route path="/register" element={<AuthPage />} />
                                 <Route path="/forgot-password" element={<ForgotPasswordPlaceholder />} />

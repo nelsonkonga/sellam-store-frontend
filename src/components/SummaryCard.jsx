@@ -6,12 +6,11 @@
 export default function SummaryCard({ icon: Icon, label, value, accentClassName }) {
   return (
     <div
-      className="flex flex-1 flex-col gap-2 rounded-2xl bg-white p-4 shadow-sm
-                 ring-1 ring-gray-100 dark:bg-gray-900 dark:ring-gray-800"
+      className="flex flex-1 flex-col gap-2 rounded-2xl glass p-4 shadow-sm"
     >
       <div
         className={`flex h-9 w-9 items-center justify-center rounded-full ${
-          accentClassName || "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400"
+          accentClassName || "bg-brand-500/10 text-brand-400"
         }`}
       >
         <Icon size={18} />

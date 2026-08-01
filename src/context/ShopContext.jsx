@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { useAuth } from "./AuthContext";
+import { getShops } from "../services/shopService";
 
 const ShopContext = createContext(null);
 
@@ -21,6 +22,8 @@ export function ShopProvider({ children }) {
   const [selectedShopName, setSelectedShopName] = useState(() =>
     localStorage.getItem(STORAGE_KEYS.shopName)
   );
+  const [shops, setShops] = useState([]);
+  const [loadingShops, setLoadingShops] = useState(false);
 
   // Sélectionne la boutique active (appelé au clic sur une carte boutique dans ShopsPage)
   const selectShop = useCallback((id, name) => {
@@ -38,6 +41,30 @@ export function ShopProvider({ children }) {
     setSelectedShopName(null);
   }, []);
 
+  useEffect(() => {
+    async function fetchShops() {
+      if (!accountId) {
+        setShops([]);
+        return;
+      }
+      setLoadingShops(true);
+      try {
+        const data = await getShops();
+        setShops(data);
+        
+        // Auto-select if none selected but we have shops
+        if (data.length > 0 && !selectedShopId) {
+          selectShop(data[0].id, data[0].name);
+        }
+      } catch (err) {
+        console.error("Failed to load shops", err);
+      } finally {
+        setLoadingShops(false);
+      }
+    }
+    fetchShops();
+  }, [accountId, selectedShopId, selectShop]);
+
   // Nettoyage automatique en cas de déconnexion ou changement de compte
   useEffect(() => {
     if (!accountId) {
@@ -45,7 +72,7 @@ export function ShopProvider({ children }) {
     }
   }, [accountId, clearShop]);
 
-  const value = { selectedShopId, selectedShopName, selectShop, clearShop };
+  const value = { selectedShopId, selectedShopName, selectShop, clearShop, shops, loadingShops };
 
   return <ShopContext.Provider value={value}>{children}</ShopContext.Provider>;
 }

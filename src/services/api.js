@@ -2,11 +2,13 @@ import axios from "axios";
 
 // Instance axios unique pour toute l'app, avec l'URL de base du backend Spring Boot
 const api = axios.create({
-  baseURL: "http://localhost:8080/api",
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8080/api",
   headers: {
     "Content-Type": "application/json",
+    "ngrok-skip-browser-warning": "true",
   },
 });
+
 
 // --- Pont entre axios (hors React) et le AuthContext (React) ---
 // Un intercepteur axios vit en dehors de l'arbre de composants et ne peut donc

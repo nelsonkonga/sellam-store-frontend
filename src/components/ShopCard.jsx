@@ -35,9 +35,8 @@ export default function ShopCard({ shop, onSelect, onEdit }) {
     <div
       onClick={() => onSelect(shop)}
       className="relative flex cursor-pointer items-center gap-4 rounded-2xl
-                 bg-white p-4 shadow-sm ring-1 ring-gray-100 transition
-                 hover:shadow-md active:scale-[0.99]
-                 dark:bg-gray-900 dark:ring-gray-800"
+                 glass p-4 transition
+                 hover:shadow-md active:scale-[0.99]"
     >
       <img
         src={shop.logoUrl || DEFAULT_LOGO}
@@ -50,10 +49,10 @@ export default function ShopCard({ shop, onSelect, onEdit }) {
       />
 
       <div className="min-w-0 flex-1">
-        <h3 className="truncate font-semibold text-gray-900 dark:text-white">
+        <h3 className="truncate font-semibold text-white">
           {shop.name}
         </h3>
-        <p className="truncate text-sm text-gray-500 dark:text-gray-400">
+        <p className="truncate text-sm text-gray-300">
           {shop.address || "Adresse non renseignée"}
         </p>
       </div>
@@ -69,7 +68,7 @@ export default function ShopCard({ shop, onSelect, onEdit }) {
           aria-label="Options"
           className="flex h-9 w-9 flex-shrink-0 items-center justify-center
                      rounded-full text-xl text-gray-400 transition
-                     hover:bg-gray-100 dark:hover:bg-gray-800"
+                     hover:bg-white/10"
         >
           ⋮
         </button>

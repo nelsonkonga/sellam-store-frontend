@@ -122,14 +122,14 @@ export default function DailyBalancePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 dark:bg-gray-950">
-      <header className="px-5 pb-4 pt-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+    <div className="min-h-screen bg-section-alt pb-24 text-white">
+      <header className="px-5 pb-4 pt-6 mx-auto max-w-5xl">
+        <h1 className="text-2xl font-bold text-white">
           Bilan du jour
         </h1>
       </header>
 
-      <main className="flex flex-col gap-5 px-5">
+      <main className="flex flex-col gap-5 px-5 mx-auto max-w-5xl">
         {/* Résumé du jour, calculé depuis les ventes déjà enregistrées */}
         {loadingSales ? (
           <p className="text-center text-sm text-gray-400 dark:text-gray-500">
@@ -145,15 +145,15 @@ export default function DailyBalancePage() {
           </div>
         ) : (
           <div className="flex gap-3">
-            <div className="flex-1 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-100 dark:bg-gray-900 dark:ring-gray-800">
-              <p className="text-xs text-gray-500 dark:text-gray-400">Ventes du jour</p>
-              <p className="mt-1 text-lg font-bold text-gray-900 dark:text-white">
+            <div className="flex-1 rounded-2xl glass p-4 shadow-sm">
+              <p className="text-xs text-gray-300">Ventes du jour</p>
+              <p className="mt-1 text-lg font-bold text-white">
                 {currencyFormatter.format(totalSalesToday)}
               </p>
             </div>
-            <div className="flex-1 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-100 dark:bg-gray-900 dark:ring-gray-800">
-              <p className="text-xs text-gray-500 dark:text-gray-400">Marge du jour</p>
-              <p className="mt-1 text-lg font-bold text-gray-900 dark:text-white">
+            <div className="flex-1 rounded-2xl glass p-4 shadow-sm">
+              <p className="text-xs text-gray-300">Marge du jour</p>
+              <p className="mt-1 text-lg font-bold text-white">
                 {currencyFormatter.format(totalMarginToday)}
               </p>
             </div>
@@ -167,19 +167,18 @@ export default function DailyBalancePage() {
             <button
               type="button"
               onClick={handleReset}
-              className="w-full rounded-xl border border-gray-300 py-3 text-sm font-medium
-                         text-gray-700 transition hover:bg-gray-50
-                         dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+              className="w-full rounded-xl border border-white/20 py-3 text-sm font-medium
+                         text-white transition hover:bg-white/10"
             >
               Refaire une vérification
             </button>
           </div>
         ) : (
-          <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100 dark:bg-gray-900 dark:ring-gray-800">
-            <p className="mb-3 text-center text-sm font-medium text-gray-700 dark:text-gray-300">
+          <div className="rounded-2xl glass p-5 shadow-sm">
+            <p className="mb-3 text-center text-sm font-medium text-gray-300">
               Argent que tu as en main actuellement
             </p>
-            <p className="mb-4 text-center text-3xl font-bold text-gray-900 dark:text-white">
+            <p className="mb-4 text-center text-3xl font-bold text-white">
               {declaredCash
                 ? currencyFormatter.format(parseFloat(declaredCash) || 0)
                 : "0 FCFA"}
@@ -205,10 +204,9 @@ export default function DailyBalancePage() {
               type="button"
               onClick={handleSubmit}
               disabled={submitting}
-              className="mt-4 w-full rounded-xl bg-emerald-500 py-4 text-base font-bold
-                         text-white shadow-md transition hover:bg-emerald-600
-                         disabled:cursor-not-allowed disabled:opacity-60
-                         dark:bg-emerald-600 dark:hover:bg-emerald-500"
+              className="mt-4 w-full rounded-xl btn-gradient py-4 text-base font-bold
+                         text-white shadow-md transition
+                         disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting ? "Vérification..." : "Vérifier mon bilan"}
             </button>
@@ -217,7 +215,7 @@ export default function DailyBalancePage() {
 
         {/* Historique des bilans précédents */}
         <section>
-          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
+          <h2 className="mb-3 text-sm font-semibold text-gray-300">
             Historique
           </h2>
 
@@ -237,14 +235,14 @@ export default function DailyBalancePage() {
                 return (
                   <div
                     key={entry.id || Math.random()}
-                    className="flex items-center justify-between rounded-xl bg-white p-3
-                               shadow-sm ring-1 ring-gray-100 dark:bg-gray-900 dark:ring-gray-800"
+                    className="flex items-center justify-between rounded-xl glass p-3
+                               shadow-sm"
                   >
                     <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                      <p className="text-sm font-medium text-white">
                         {isValidDate ? dateFormatter.format(dateObj) : "Date inconnue"}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                      <p className="text-xs text-gray-300">
                         Déclaré : {currencyFormatter.format(entry.declaredCash)}
                       </p>
                     </div>

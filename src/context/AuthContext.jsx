@@ -9,6 +9,7 @@ const STORAGE_KEYS = {
   token: "token",
   accountId: "accountId",
   name: "name",
+  phoneNumber: "phoneNumber",
 };
 
 /**
@@ -21,16 +22,19 @@ export function AuthProvider({ children }) {
     localStorage.getItem(STORAGE_KEYS.accountId)
   );
   const [name, setName] = useState(() => localStorage.getItem(STORAGE_KEYS.name));
+  const [phoneNumber, setPhoneNumber] = useState(() => localStorage.getItem(STORAGE_KEYS.phoneNumber));
 
   // Appelé après un login/register réussi (voir authService).
   // Stocke les infos de session en state + localStorage.
-  const login = useCallback(({ token, accountId, name }) => {
+  const login = useCallback(({ token, accountId, name, phoneNumber }) => {
     localStorage.setItem(STORAGE_KEYS.token, token);
     localStorage.setItem(STORAGE_KEYS.accountId, accountId);
     localStorage.setItem(STORAGE_KEYS.name, name);
+    if (phoneNumber) localStorage.setItem(STORAGE_KEYS.phoneNumber, phoneNumber);
     setToken(token);
     setAccountId(accountId);
     setName(name);
+    if (phoneNumber) setPhoneNumber(phoneNumber);
   }, []);
 
   // Efface toute trace de session. Utilisé au clic "Se déconnecter"
@@ -39,9 +43,11 @@ export function AuthProvider({ children }) {
     localStorage.removeItem(STORAGE_KEYS.token);
     localStorage.removeItem(STORAGE_KEYS.accountId);
     localStorage.removeItem(STORAGE_KEYS.name);
+    localStorage.removeItem(STORAGE_KEYS.phoneNumber);
     setToken(null);
     setAccountId(null);
     setName(null);
+    setPhoneNumber(null);
   }, []);
 
   // Tient api.js informé du token courant et de la fonction de déconnexion,
@@ -54,6 +60,7 @@ export function AuthProvider({ children }) {
     token,
     accountId,
     name,
+    phoneNumber,
     isAuthenticated: !!token,
     login,
     logout,

@@ -9,8 +9,7 @@ export default function ProductRow({ product }) {
 
   return (
     <div
-      className="flex items-center gap-3 rounded-xl bg-white p-3 shadow-sm
-                 ring-1 ring-gray-100 dark:bg-gray-900 dark:ring-gray-800"
+      className="flex items-center gap-3 rounded-xl glass p-3 shadow-sm"
     >
       {product.pictureUrl ? (
         <img
@@ -35,8 +34,8 @@ export default function ProductRow({ product }) {
       <span
         className={`flex-shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
           isLowStock
-            ? "bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-400"
-            : "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400"
+            ? "bg-red-500/10 text-red-500"
+            : "bg-brand-500/10 text-brand-400"
         }`}
       >
         {product.stockQuantity}

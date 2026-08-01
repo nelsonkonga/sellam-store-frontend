@@ -62,14 +62,14 @@ export default function ProductsPage() {
   }, [products, search, selectedCategory]);
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 dark:bg-gray-950">
-      <header className="px-5 pb-4 pt-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+    <div className="min-h-screen bg-section-alt pb-24 text-white">
+      <header className="px-5 pb-4 pt-6 mx-auto max-w-5xl">
+        <h1 className="text-2xl font-bold text-white">
           Produits
         </h1>
       </header>
 
-      <main className="flex flex-col gap-3 px-5">
+      <main className="flex flex-col gap-3 px-5 mx-auto max-w-5xl">
         <SearchBar
           value={search}
           onChange={setSearch}
@@ -81,10 +81,10 @@ export default function ProductsPage() {
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3
-                       text-base text-gray-900 shadow-sm outline-none transition
-                       focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30
-                       dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+            className="w-full rounded-xl border border-white/10 glass px-4 py-3
+                       text-base text-white shadow-sm outline-none transition
+                       focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30
+                       appearance-none"
           >
             <option value={ALL_CATEGORIES}>Toutes les catégories</option>
             {categories.map((cat) => (
@@ -135,10 +135,9 @@ export default function ProductsPage() {
         type="button"
         onClick={() => navigate("/products/new")}
         aria-label="Ajouter un produit"
-        className="fixed bottom-20 right-6 flex h-14 w-14 items-center justify-center
-                   rounded-full bg-emerald-500 text-white shadow-lg transition
-                   hover:bg-emerald-600 active:scale-95
-                   dark:bg-emerald-600 dark:hover:bg-emerald-500"
+        className="fixed bottom-20 right-6 md:right-10 md:bottom-10 flex h-16 w-16 items-center justify-center
+                   rounded-full btn-gradient text-white shadow-xl transition
+                   active:scale-95 z-50 glow-purple"
       >
         <Plus size={28} />
       </button>

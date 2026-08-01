@@ -11,6 +11,16 @@ export async function getTodaySales(shopId) {
 }
 
 /**
+ * Récupère les ventes d'une boutique filtrées par période.
+ * @param {string} shopId
+ * @param {string} period ("today", "this_week", "this_month", "recent")
+ */
+export async function getSalesByPeriod(shopId, period = "recent") {
+  const response = await api.get(`/sales/shop/${shopId}`, { params: { period } });
+  return response.data;
+}
+
+/**
  * Enregistre une nouvelle vente.
  * @param {string} shopId
  * @param {{ productId: string, quantity: number }} data

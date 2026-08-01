@@ -16,9 +16,9 @@ export default function DaySettingRow({
   justSaved,
 }) {
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-100 dark:bg-gray-900 dark:ring-gray-800">
+    <div className="rounded-2xl glass p-4 shadow-sm">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-gray-900 dark:text-white">{label}</h3>
+        <h3 className="font-semibold text-white">{label}</h3>
 
         {/* Petit indicateur d'état, discret mais clair */}
         {isSaving ? (
@@ -27,7 +27,7 @@ export default function DaySettingRow({
             Enregistrement...
           </span>
         ) : justSaved ? (
-          <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+          <span className="flex items-center gap-1 text-xs font-medium text-brand-400">
             <Check size={14} />
             Enregistré
           </span>
@@ -41,23 +41,23 @@ export default function DaySettingRow({
       <div className="mt-3 flex flex-col gap-3">
         {/* Heure du bilan */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm text-gray-600 dark:text-gray-400">
+          <label className="text-sm text-gray-300">
             Heure du bilan
           </label>
           <input
             type="time"
             value={balanceTime}
             onChange={(e) => onChangeTime(e.target.value)}
-            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-base
-                       text-gray-900 shadow-sm outline-none transition
-                       focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30
-                       dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+            className="w-full rounded-xl border border-white/10 glass px-4 py-2.5 text-base
+                       text-white shadow-sm outline-none transition
+                       focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30
+                       appearance-none"
           />
         </div>
 
         {/* Fréquence de rappel */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm text-gray-600 dark:text-gray-400">
+          <label className="text-sm text-gray-300">
             Rappel toutes les (heures)
           </label>
           <input
@@ -68,12 +68,12 @@ export default function DaySettingRow({
             inputMode="numeric"
             value={reminderFrequencyHours}
             onChange={(e) => onChangeFrequency(e.target.value)}
-            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-base
-                       text-gray-900 shadow-sm outline-none transition
-                       focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30
-                       dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+            className="w-full rounded-xl border border-white/10 glass px-4 py-2.5 text-base
+                       text-white shadow-sm outline-none transition
+                       focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30
+                       appearance-none"
           />
-          <p className="text-xs text-gray-400 dark:text-gray-500">
+          <p className="text-xs text-gray-400">
             Tu recevras un rappel pour enregistrer tes ventes toutes les{" "}
             {reminderFrequencyHours || "X"} heures
           </p>

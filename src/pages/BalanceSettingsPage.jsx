@@ -139,17 +139,17 @@ export default function BalanceSettingsPage() {
   const hasUnsavedChanges = DAYS.some((d) => isDayDirty(d.key));
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-32 dark:bg-gray-950">
-      <header className="px-5 pb-4 pt-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+    <div className="min-h-screen bg-section-alt pb-32 text-white">
+      <header className="px-5 pb-4 pt-6 mx-auto max-w-5xl">
+        <h1 className="text-2xl font-bold text-white">
           Réglages du bilan
         </h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        <p className="mt-1 text-sm text-gray-300">
           Choisis l'heure du bilan et la fréquence des rappels pour chaque jour
         </p>
       </header>
 
-      <main className="flex flex-col gap-3 px-5">
+      <main className="flex flex-col gap-3 px-5 mx-auto max-w-5xl">
         {loading && (
           <p className="mt-10 text-center text-sm text-gray-400 dark:text-gray-500">
             Chargement des réglages...
@@ -186,7 +186,7 @@ export default function BalanceSettingsPage() {
 
       {/* Bouton global fixé en bas, au-dessus de la BottomNav */}
       {!loading && (
-        <div className="fixed bottom-16 left-0 right-0 border-t border-gray-100 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+        <div className="fixed bottom-16 left-0 right-0 border-t border-white/10 glass-strong p-4">
           {saveAllError && (
             <p className="mb-2 text-center text-sm font-medium text-red-500">
               {saveAllError}
@@ -196,10 +196,9 @@ export default function BalanceSettingsPage() {
             type="button"
             onClick={handleSaveAll}
             disabled={savingAll || !hasUnsavedChanges}
-            className="w-full rounded-xl bg-emerald-500 py-3.5 text-base font-semibold
-                       text-white shadow-md transition hover:bg-emerald-600
-                       disabled:cursor-not-allowed disabled:opacity-50
-                       dark:bg-emerald-600 dark:hover:bg-emerald-500"
+            className="w-full max-w-5xl mx-auto block rounded-xl btn-gradient py-3.5 text-base font-semibold
+                       text-white shadow-md transition
+                       disabled:cursor-not-allowed disabled:opacity-50"
           >
             {savingAll
               ? "Enregistrement en cours..."

@@ -1,8 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Styles globaux minimaux */
+/* ── Base Styles ──────────────────────────────────────────── */
+html {
+  scroll-behavior: smooth;
+}
+
 html,
 body,
 #root {
@@ -11,6 +17,133 @@ body,
 
 body {
   margin: 0;
+  font-family: "Inter", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Landing Page Utilities ───────────────────────────────── */
+@layer utilities {
+
+  /* Glassmorphism card */
+  .glass {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .glass-strong {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  /* Navbar glassmorphism */
+  .glass-nav {
+    background: rgba(10, 5, 30, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  /* Hero gradient background */
+  .bg-hero-gradient {
+    background:
+      radial-gradient(ellipse 80% 60% at 50% -20%, rgba(139, 92, 246, 0.25) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 80% 50%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse 50% 40% at 20% 80%, rgba(168, 85, 247, 0.1) 0%, transparent 50%),
+      linear-gradient(180deg, #0a0518 0%, #0f0a2a 40%, #0d0820 100%);
+  }
+
+  /* Section gradient backgrounds */
+  .bg-section-dark {
+    background:
+      radial-gradient(ellipse 60% 40% at 30% 50%, rgba(139, 92, 246, 0.08) 0%, transparent 60%),
+      linear-gradient(180deg, #0d0820 0%, #0a0518 100%);
+  }
+
+  .bg-section-alt {
+    background:
+      radial-gradient(ellipse 50% 50% at 70% 30%, rgba(59, 130, 246, 0.08) 0%, transparent 60%),
+      linear-gradient(180deg, #0a0518 0%, #0f0a2a 100%);
+  }
+
+  /* Glow effects */
+  .glow-purple {
+    box-shadow:
+      0 0 20px rgba(139, 92, 246, 0.3),
+      0 0 60px rgba(139, 92, 246, 0.1);
+  }
+
+  .glow-blue {
+    box-shadow:
+      0 0 20px rgba(59, 130, 246, 0.3),
+      0 0 60px rgba(59, 130, 246, 0.1);
+  }
+
+  /* Animated gradient text */
+  .text-gradient {
+    background: linear-gradient(135deg, #a78bfa 0%, #818cf8 25%, #60a5fa 50%, #a78bfa 75%, #818cf8 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer 4s linear infinite;
+  }
+
+  /* CTA button gradient */
+  .btn-gradient {
+    background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 50%, #3b82f6 100%);
+    transition: all 0.3s ease;
+  }
+
+  .btn-gradient:hover {
+    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #2563eb 100%);
+    box-shadow: 0 8px 30px rgba(139, 92, 246, 0.4);
+    transform: translateY(-2px);
+  }
+
+  .btn-gradient:active {
+    transform: translateY(0);
+  }
+
+  /* Secondary CTA */
+  .btn-outline {
+    border: 1px solid rgba(139, 92, 246, 0.4);
+    color: #c4b5fd;
+    transition: all 0.3s ease;
+  }
+
+  .btn-outline:hover {
+    border-color: rgba(139, 92, 246, 0.8);
+    background: rgba(139, 92, 246, 0.1);
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
+  }
+
+  /* Grid dot pattern overlay */
+  .bg-grid-pattern {
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.03) 1px, transparent 0);
+    background-size: 40px 40px;
+  }
+
+  /* Scroll reveal animation */
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+  .reveal-delay-4 { transition-delay: 0.4s; }
+  .reveal-delay-5 { transition-delay: 0.5s; }
 }

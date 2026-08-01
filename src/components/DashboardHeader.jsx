@@ -1,17 +1,23 @@
 import { useState } from "react";
-import { Bell } from "lucide-react";
+import { Bell, ChevronDown } from "lucide-react";
 import DarkModeToggle from "./DarkModeToggle";
 import NotificationPanel from "./NotificationPanel";
+import { useShop } from "../context/ShopContext";
 
 /**
  * Header du dashboard.
  * - Avatar : affiche la photo de profil si disponible, sinon l'initiale du nom sur fond coloré.
  * - hasNotifications pilote le petit badge rouge sur la cloche.
  */
-export default function DashboardHeader({ shopName, userName, avatarUrl, hasNotifications }) {
+export default function DashboardHeader({ userName, avatarUrl, hasNotifications }) {
   const [showNotifications, setShowNotifications] = useState(false);
+  const { shops, selectedShopId, selectShop } = useShop();
 
   const initial = userName ? userName.trim().charAt(0).toUpperCase() : "?";
+
+  // Find current shop to display its name
+  const currentShop = shops.find(s => s.id === selectedShopId);
+  const shopNameDisplay = currentShop ? currentShop.name : "Sélectionner une boutique";
 
   return (
     <>
@@ -32,10 +38,28 @@ export default function DashboardHeader({ shopName, userName, avatarUrl, hasNoti
               {initial}
             </div>
           )}
-          <div className="min-w-0">
-            <p className="truncate text-lg font-bold text-gray-900 dark:text-white">
-              {shopName}
-            </p>
+          <div className="min-w-0 flex-1">
+            <div className="relative flex items-center gap-1 group">
+              <select
+                className="absolute inset-0 w-full opacity-0 cursor-pointer"
+                value={selectedShopId || ""}
+                onChange={(e) => {
+                  const shop = shops.find(s => s.id === e.target.value);
+                  if (shop) {
+                    selectShop(shop.id, shop.name);
+                  }
+                }}
+              >
+                <option value="" disabled>Sélectionner une boutique</option>
+                {shops.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+              <p className="truncate text-lg font-bold text-gray-900 dark:text-white group-hover:text-brand-600 transition-colors">
+                {shopNameDisplay}
+              </p>
+              <ChevronDown size={16} className="text-gray-400 group-hover:text-brand-600 transition-colors" />
+            </div>
             <p className="truncate text-xs text-gray-500 dark:text-gray-400">
               Bonjour, {userName}
             </p>

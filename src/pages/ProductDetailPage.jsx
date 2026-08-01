@@ -5,26 +5,24 @@ import {
   getProductById,
   createProduct,
   updateProduct,
+  getSaleTypes,
+  createSaleType,
 } from "../services/productService";
+import Modal from "../components/Modal";
 import { useShop } from "../context/ShopContext";
 import { useProductsCache } from "../context/ProductsContext";
 import FormField from "../components/FormField";
 import NumberField from "../components/NumberField";
 import ImageUploadField from "../components/ImageUploadField";
 
-// Les 3 modes de vente possibles, avec leur libellé lisible pour l'UI
-const SALE_TYPES = [
-  { value: "UNIT", label: "À l'unité" },
-  { value: "BATCH", label: "Au tas" },
-  { value: "WEIGHT", label: "Au poids (kg)" },
-];
+
 
 // Structure vide de départ pour un nouveau produit
 const EMPTY_FORM = {
   name: "",
   barcode: "",
   pictureUrl: "",
-  saleTypeEnum: "UNIT",
+  saleTypeId: "",
   purchasePrice: "",
   sellingPrice: "",
   stockQuantity: "",
@@ -46,6 +44,11 @@ export default function ProductDetailPage() {
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
 
+  const [saleTypes, setSaleTypes] = useState([]);
+  const [showSaleTypeModal, setShowSaleTypeModal] = useState(false);
+  const [newSaleType, setNewSaleType] = useState({ name: "", unitLabel: "" });
+  const [creatingSaleType, setCreatingSaleType] = useState(false);
+
   // Preview locale de l'image (data URL), distincte de form.pictureUrl
   // tant que le fichier n'est pas réellement uploadé
   const [imagePreview, setImagePreview] = useState("");
@@ -61,39 +64,55 @@ export default function ProductDetailPage() {
 
   // Charge le produit existant en mode édition : d'abord depuis le cache
   // (venu de la liste), sinon via un GET dédié (accès direct par URL)
+  // Charge aussi les types de vente de la boutique.
   useEffect(() => {
-    if (!isEditMode) return;
-
-    const cached = findProductInCache(id);
-    if (cached) {
-      setForm(mapProductToForm(cached));
-      setImagePreview(cached.pictureUrl || "");
-      setLoading(false);
-      return;
-    }
-
-    async function fetchProduct() {
-      try {
-        // TODO: GET /api/products/{id} pas encore confirmé côté backend
-        const data = await getProductById(id);
-        setForm(mapProductToForm(data));
-        setImagePreview(data.pictureUrl || "");
-      } catch (err) {
-        setError("Impossible de charger ce produit.");
-      } finally {
-        setLoading(false);
+    async function initData() {
+      if (shopId) {
+        try {
+          const types = await getSaleTypes(shopId);
+          setSaleTypes(types);
+        } catch (err) {
+          console.error("Erreur chargement types de vente", err);
+        }
       }
+
+      if (!isEditMode) {
+        setLoading(false);
+        return;
+      }
+
+      const cached = findProductInCache(id);
+      if (cached) {
+        setForm(mapProductToForm(cached));
+        setImagePreview(cached.pictureUrl || "");
+        setLoading(false);
+        return;
+      }
+
+      async function fetchProduct() {
+        try {
+          // TODO: GET /api/products/{id} pas encore confirmé côté backend
+          const data = await getProductById(id);
+          setForm(mapProductToForm(data));
+          setImagePreview(data.pictureUrl || "");
+        } catch (err) {
+          setError("Impossible de charger ce produit.");
+        } finally {
+          setLoading(false);
+        }
+      }
+      fetchProduct();
     }
-    fetchProduct();
+    initData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, isEditMode]);
+  }, [id, isEditMode, shopId]);
 
   function mapProductToForm(product) {
     return {
       name: product.name || "",
       barcode: product.barcode || "",
       pictureUrl: product.pictureUrl || "",
-      saleTypeEnum: product.saleTypeEnum || "UNIT",
+      saleTypeId: product.saleTypeId || "",
       purchasePrice: product.purchasePrice ?? "",
       sellingPrice: product.sellingPrice ?? "",
       stockQuantity: product.stockQuantity ?? "",
@@ -104,9 +123,32 @@ export default function ProductDetailPage() {
 
   function handleChange(e) {
     const { name, value } = e.target;
+    if (name === "saleTypeId" && value === "CREATE_NEW") {
+      setShowSaleTypeModal(true);
+      return;
+    }
     setForm((prev) => ({ ...prev, [name]: value }));
     if (fieldErrors[name]) {
       setFieldErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
+  }
+
+  async function handleCreateSaleType(e) {
+    e.preventDefault();
+    if (!newSaleType.name.trim() || !newSaleType.unitLabel.trim()) return;
+    
+    setCreatingSaleType(true);
+    try {
+      const created = await createSaleType(shopId, newSaleType);
+      setSaleTypes((prev) => [...prev, created]);
+      setForm((prev) => ({ ...prev, saleTypeId: created.id }));
+      setShowSaleTypeModal(false);
+      setNewSaleType({ name: "", unitLabel: "" });
+    } catch (err) {
+      console.error(err);
+      alert("Erreur lors de la création du type de vente");
+    } finally {
+      setCreatingSaleType(false);
     }
   }
 
@@ -115,7 +157,10 @@ export default function ProductDetailPage() {
   function handleFileSelect(file) {
     setSelectedFile(file);
     const reader = new FileReader();
-    reader.onload = () => setImagePreview(reader.result);
+    reader.onload = () => {
+      setImagePreview(reader.result);
+      setForm((prev) => ({ ...prev, pictureUrl: reader.result }));
+    };
     reader.readAsDataURL(file);
   }
 
@@ -131,6 +176,8 @@ export default function ProductDetailPage() {
     if (!form.name.trim()) errors.name = "Le nom est obligatoire.";
     if (form.purchasePrice === "" || Number(form.purchasePrice) < 0)
       errors.purchasePrice = "Le prix d'achat est obligatoire.";
+    if (!form.saleTypeId)
+      errors.saleTypeId = "Le type de vente est obligatoire.";
     if (form.sellingPrice === "" || Number(form.sellingPrice) < 0)
       errors.sellingPrice = "Le prix de vente est obligatoire.";
     if (form.stockQuantity === "" || Number(form.stockQuantity) < 0)
@@ -177,9 +224,9 @@ export default function ProductDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-10 dark:bg-gray-950">
+    <div className="min-h-screen bg-section-dark pb-10 text-white">
       {/* En-tête avec retour */}
-      <header className="flex items-center gap-3 px-5 pb-4 pt-6">
+      <header className="flex items-center gap-3 px-5 pb-4 pt-6 mx-auto max-w-5xl">
         <button
           type="button"
           onClick={() => navigate("/products")}
@@ -190,12 +237,12 @@ export default function ProductDetailPage() {
         >
           <ArrowLeft size={20} />
         </button>
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-xl font-bold text-white">
           {isEditMode ? "Modifier le produit" : "Nouveau produit"}
         </h1>
       </header>
 
-      <main className="px-5">
+      <main className="px-5 mx-auto max-w-5xl">
         {loading ? (
           <p className="mt-10 text-center text-sm text-gray-400 dark:text-gray-500">
             Chargement du produit...
@@ -241,27 +288,36 @@ export default function ProductDetailPage() {
             {/* Type de vente */}
             <div className="flex flex-col gap-1.5">
               <label
-                htmlFor="saleTypeEnum"
-                className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                htmlFor="saleTypeId"
+                className="text-sm font-medium text-gray-300"
               >
                 Type de vente
               </label>
               <select
-                id="saleTypeEnum"
-                name="saleTypeEnum"
-                value={form.saleTypeEnum}
+                id="saleTypeId"
+                name="saleTypeId"
+                value={form.saleTypeId}
                 onChange={handleChange}
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3
-                           text-base text-gray-900 shadow-sm outline-none transition
-                           focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30
-                           dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+                className="w-full rounded-xl border border-white/10 glass px-4 py-3
+                           text-base text-white shadow-sm outline-none transition
+                           focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30
+                           appearance-none"
               >
-                {SALE_TYPES.map((type) => (
-                  <option key={type.value} value={type.value}>
-                    {type.label}
+                <option value="" disabled>-- Sélectionner --</option>
+                {saleTypes.map((type) => (
+                  <option key={type.id} value={type.id}>
+                    {type.name} ({type.unitLabel})
                   </option>
                 ))}
+                <option value="CREATE_NEW" className="font-semibold text-brand-600">
+                  + Créer un nouveau type
+                </option>
               </select>
+              {fieldErrors.saleTypeId && (
+                <p className="mt-1 text-xs font-medium text-red-500">
+                  {fieldErrors.saleTypeId}
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -331,7 +387,7 @@ export default function ProductDetailPage() {
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="category"
-                className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                className="text-sm font-medium text-gray-300"
               >
                 Catégorie
               </label>
@@ -343,11 +399,9 @@ export default function ProductDetailPage() {
                 value={form.category}
                 onChange={handleChange}
                 placeholder="Ex: Épicerie"
-                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base
-                           text-gray-900 placeholder-gray-400 shadow-sm outline-none
-                           transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30
-                           dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100
-                           dark:placeholder-gray-500"
+                className="w-full rounded-xl border border-white/10 glass px-4 py-3 text-base
+                           text-white placeholder-gray-500 shadow-sm outline-none
+                           transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30"
               />
               {/* datalist HTML natif : suggestions cliquables sans lib externe */}
               <datalist id="category-suggestions">
@@ -370,10 +424,9 @@ export default function ProductDetailPage() {
             <button
               type="submit"
               disabled={saving}
-              className="mt-2 w-full rounded-xl bg-emerald-500 py-3.5 text-base font-semibold
-                         text-white shadow-md transition hover:bg-emerald-600
-                         disabled:cursor-not-allowed disabled:opacity-60
-                         dark:bg-emerald-600 dark:hover:bg-emerald-500"
+              className="mt-2 w-full rounded-xl btn-gradient py-3.5 text-base font-semibold
+                         text-white shadow-md transition
+                         disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saving
                 ? "Enregistrement..."
@@ -384,6 +437,46 @@ export default function ProductDetailPage() {
           </form>
         )}
       </main>
+
+      {showSaleTypeModal && (
+        <Modal
+          title="Nouveau type de vente"
+          onClose={() => setShowSaleTypeModal(false)}
+        >
+          <form onSubmit={handleCreateSaleType} className="flex flex-col gap-4">
+            <FormField
+              id="newSaleTypeName"
+              label="Nom (ex: Bouteille)"
+              value={newSaleType.name}
+              onChange={(e) => setNewSaleType(prev => ({...prev, name: e.target.value}))}
+              placeholder="Bouteille"
+            />
+            <FormField
+              id="newSaleTypeUnit"
+              label="Unité (ex: btl, L, kg)"
+              value={newSaleType.unitLabel}
+              onChange={(e) => setNewSaleType(prev => ({...prev, unitLabel: e.target.value}))}
+              placeholder="btl"
+            />
+            <div className="mt-2 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowSaleTypeModal(false)}
+                className="rounded-lg px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                Annuler
+              </button>
+              <button
+                type="submit"
+                disabled={creatingSaleType}
+                className="btn-gradient rounded-lg px-4 py-2 text-sm font-semibold text-white"
+              >
+                {creatingSaleType ? "Création..." : "Créer"}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 }
