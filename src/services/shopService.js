@@ -18,3 +18,9 @@ export async function createShop(data) {
   const response = await api.post("/shops", data);
   return response.data;
 }
+
+
+export async function updateShopSettings(shopId, settings) {
+  const response = await api.patch(`/shops/${shopId}/settings`, settings);
+  return response.data;
+}

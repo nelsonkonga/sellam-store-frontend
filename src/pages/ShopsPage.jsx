@@ -35,14 +35,8 @@ export default function ShopsPage() {
     fetchShops();
   }, []);
 
-  // Si le gérant n'a qu'une seule boutique, on saute directement au dashboard :
-  // pas besoin de lui faire choisir quand il n'y a pas de choix à faire.
-  useEffect(() => {
-    if (!loading && shops.length === 1) {
-      handleSelectShop(shops[0]);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, shops]);
+  // Redirection automatique supprimée pour permettre d'accéder à la liste
+  // et de créer une nouvelle boutique même quand on n'en a qu'une seule.
 
   // Sélectionne une boutique comme boutique active et va au dashboard
   function handleSelectShop(shop) {
@@ -146,9 +140,9 @@ export default function ShopsPage() {
         type="button"
         onClick={() => setShowCreateModal(true)}
         aria-label="Créer une boutique"
-        className="fixed bottom-6 right-6 md:right-10 md:bottom-10 flex h-16 w-16 items-center justify-center
+        className="fixed bottom-24 right-6 md:right-10 md:bottom-10 flex h-16 w-16 items-center justify-center
                    rounded-full btn-gradient text-3xl font-light text-white shadow-xl
-                   transition active:scale-95 glow-purple"
+                   transition active:scale-95 glow-purple z-50"
       >
         +
       </button>

@@ -20,12 +20,5 @@ export async function getSalesByPeriod(shopId, period = "recent") {
   return response.data;
 }
 
-/**
- * Enregistre une nouvelle vente.
- * @param {string} shopId
- * @param {{ productId: string, quantity: number }} data
- */
-export async function createSale(shopId, data) {
-  const response = await api.post("/sales", data, { params: { shopId } });
-  return response.data;
-}
+// NOTE : La création de ventes passe désormais exclusivement par les factures
+// (invoiceService.addInvoiceLine). L'ancienne fonction createSale a été retirée.

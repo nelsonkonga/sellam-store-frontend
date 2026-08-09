@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Bell, ChevronDown } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Bell, ChevronDown, Store } from "lucide-react";
 import DarkModeToggle from "./DarkModeToggle";
 import NotificationPanel from "./NotificationPanel";
 import { useShop } from "../context/ShopContext";
@@ -11,6 +12,7 @@ import { useShop } from "../context/ShopContext";
  */
 export default function DashboardHeader({ userName, avatarUrl, hasNotifications }) {
   const [showNotifications, setShowNotifications] = useState(false);
+  const navigate = useNavigate();
   const { shops, selectedShopId, selectShop } = useShop();
 
   const initial = userName ? userName.trim().charAt(0).toUpperCase() : "?";
@@ -67,6 +69,18 @@ export default function DashboardHeader({ userName, avatarUrl, hasNotifications 
         </div>
 
         <div className="flex flex-shrink-0 items-center gap-2">
+          {/* Bouton Mes Boutiques */}
+          <button
+            type="button"
+            onClick={() => navigate('/shops')}
+            title="Mes boutiques"
+            className="relative flex h-10 w-10 items-center justify-center rounded-full
+                       bg-gray-100 text-gray-600 transition hover:bg-gray-200
+                       dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+          >
+            <Store size={18} />
+          </button>
+
           {/* Icône notifications avec badge rouge conditionnel */}
           <button
             type="button"

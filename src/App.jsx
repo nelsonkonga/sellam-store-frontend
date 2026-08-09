@@ -15,6 +15,12 @@ import NewSalePage from "./pages/NewSalePage";
 import DailyBalancePage from "./pages/DailyBalancePage";
 import BalanceSettingsPage from "./pages/BalanceSettingsPage";
 import ProfileSettingsPage from "./pages/ProfileSettingsPage";
+import {useAutoSync} from "./hooks/useSync.js";
+import OAuthCallbackPage from "./pages/OAuthCallbackPage.jsx";
+import VerifyEmailPage from "./pages/VerifyEmailPage.jsx";
+import InvoiceDetailPage from "./pages/InvoiceDetailPage.jsx";
+import InvoicesPage from "./pages/InvoicesPage.jsx";
+import EmployeesPage from "./pages/EmployeesPage.jsx";
 
 // Page vide en attendant l'implémentation du mot de passe oublié
 function ForgotPasswordPlaceholder() {
@@ -28,6 +34,7 @@ function ForgotPasswordPlaceholder() {
 }
 
 export default function App() {
+    useAutoSync();
     return (
         // Ordre des providers : Theme et Auth sont indépendants l'un de l'autre,
         // mais Shop et Products dépendent conceptuellement d'un compte connecté
@@ -39,28 +46,31 @@ export default function App() {
                         <BrowserRouter>
                             <Routes>
                                 {/* Routes publiques */}
-                                <Route path="/" element={<LandingPage />} />
-                                <Route path="/login" element={<AuthPage />} />
-                                <Route path="/register" element={<AuthPage />} />
-                                <Route path="/forgot-password" element={<ForgotPasswordPlaceholder />} />
+                                <Route path="/" element={<LandingPage/>}/>
+                                <Route path="/login" element={<AuthPage/>}/>
+                                <Route path="/register" element={<AuthPage/>}/>
+                                <Route path="/forgot-password" element={<ForgotPasswordPlaceholder/>}/>
+                                <Route path="/oauth-callback" element={<OAuthCallbackPage/>}/>
+                                <Route path="/verify-email" element={<VerifyEmailPage/>}/>
+                                <Route path="/invoices" element={<ProtectedRoute><InvoicesPage /></ProtectedRoute>} />
+                                <Route path="/invoices/:id" element={<ProtectedRoute><InvoiceDetailPage /></ProtectedRoute>} />
 
-                                {/* Route protégée mais sans exigence de boutique sélectionnée :
-                    c'est justement ici qu'on en choisit une. */}
+
                                 <Route
                                     path="/shops"
                                     element={
                                         <ProtectedRoute requireShop={false}>
-                                            <ShopsPage />
+                                            <ShopsPage/>
                                         </ProtectedRoute>
                                     }
                                 />
 
-                                {/* Routes protégées nécessitant une boutique sélectionnée */}
+
                                 <Route
                                     path="/dashboard"
                                     element={
                                         <ProtectedRoute>
-                                            <DashboardPage />
+                                            <DashboardPage/>
                                         </ProtectedRoute>
                                     }
                                 />
@@ -68,7 +78,7 @@ export default function App() {
                                     path="/products"
                                     element={
                                         <ProtectedRoute>
-                                            <ProductsPage />
+                                            <ProductsPage/>
                                         </ProtectedRoute>
                                     }
                                 />
@@ -76,7 +86,7 @@ export default function App() {
                                     path="/products/new"
                                     element={
                                         <ProtectedRoute>
-                                            <ProductDetailPage />
+                                            <ProductDetailPage/>
                                         </ProtectedRoute>
                                     }
                                 />
@@ -84,7 +94,7 @@ export default function App() {
                                     path="/products/:id"
                                     element={
                                         <ProtectedRoute>
-                                            <ProductDetailPage />
+                                            <ProductDetailPage/>
                                         </ProtectedRoute>
                                     }
                                 />
@@ -92,7 +102,7 @@ export default function App() {
                                     path="/sales/new"
                                     element={
                                         <ProtectedRoute>
-                                            <NewSalePage />
+                                            <NewSalePage/>
                                         </ProtectedRoute>
                                     }
                                 />
@@ -100,7 +110,7 @@ export default function App() {
                                     path="/balance"
                                     element={
                                         <ProtectedRoute>
-                                            <DailyBalancePage />
+                                            <DailyBalancePage/>
                                         </ProtectedRoute>
                                     }
                                 />
@@ -108,7 +118,15 @@ export default function App() {
                                     path="/settings/balance"
                                     element={
                                         <ProtectedRoute>
-                                            <BalanceSettingsPage />
+                                            <BalanceSettingsPage/>
+                                        </ProtectedRoute>
+                                    }
+                                />
+                                <Route
+                                    path="/employees"
+                                    element={
+                                        <ProtectedRoute>
+                                            <EmployeesPage/>
                                         </ProtectedRoute>
                                     }
                                 />
@@ -116,14 +134,14 @@ export default function App() {
                                     path="/settings/profile"
                                     element={
                                         <ProtectedRoute>
-                                            <ProfileSettingsPage />
+                                            <ProfileSettingsPage/>
                                         </ProtectedRoute>
                                     }
                                 />
 
                                 {/* Toute route inconnue renvoie vers /login ; ProtectedRoute
                     prendra ensuite le relai pour rediriger plus loin si déjà connecté. */}
-                                <Route path="*" element={<Navigate to="/login" replace />} />
+                                <Route path="*" element={<Navigate to="/login" replace/>}/>
                             </Routes>
                         </BrowserRouter>
                     </ProductsProvider>

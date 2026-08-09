@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useShop } from "../context/ShopContext";
+import EmailVerificationBanner from "./EmailVerificationBanner";
 
 /**
  * Protège une route :
@@ -28,5 +29,10 @@ export default function ProtectedRoute({ children, requireShop = true }) {
     return <Navigate to="/shops" replace />;
   }
 
-  return children;
+  return (
+      <>
+        <EmailVerificationBanner />
+        {children}
+      </>
+  );
 }

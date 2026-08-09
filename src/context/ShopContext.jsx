@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { useAuth } from "./AuthContext";
 import { getShops } from "../services/shopService";
+import { usePreloadOfflineData } from "../hooks/usePreloadOfflineData";
 
 const ShopContext = createContext(null);
 
@@ -16,24 +17,29 @@ const STORAGE_KEYS = {
  */
 export function ShopProvider({ children }) {
   const { accountId } = useAuth();
+  const { preload, isPreloading } = usePreloadOfflineData();
   const [selectedShopId, setSelectedShopId] = useState(() =>
-    localStorage.getItem(STORAGE_KEYS.shopId)
+      localStorage.getItem(STORAGE_KEYS.shopId)
   );
   const [selectedShopName, setSelectedShopName] = useState(() =>
-    localStorage.getItem(STORAGE_KEYS.shopName)
+      localStorage.getItem(STORAGE_KEYS.shopName)
   );
   const [shops, setShops] = useState([]);
   const [loadingShops, setLoadingShops] = useState(false);
 
-  // Sélectionne la boutique active (appelé au clic sur une carte boutique dans ShopsPage)
-  const selectShop = useCallback((id, name) => {
-    localStorage.setItem(STORAGE_KEYS.shopId, id);
-    localStorage.setItem(STORAGE_KEYS.shopName, name || "");
-    setSelectedShopId(id);
-    setSelectedShopName(name || "");
-  }, []);
 
-  // Efface la boutique active (utile par exemple lors d'un logout complet)
+  const selectShop = useCallback(
+      (id, name) => {
+        localStorage.setItem(STORAGE_KEYS.shopId, id);
+        localStorage.setItem(STORAGE_KEYS.shopName, name || "");
+        setSelectedShopId(id);
+        setSelectedShopName(name || "");
+
+        preload(id);
+      },
+      [preload]
+  );
+
   const clearShop = useCallback(() => {
     localStorage.removeItem(STORAGE_KEYS.shopId);
     localStorage.removeItem(STORAGE_KEYS.shopName);
@@ -41,38 +47,49 @@ export function ShopProvider({ children }) {
     setSelectedShopName(null);
   }, []);
 
-  useEffect(() => {
-    async function fetchShops() {
-      if (!accountId) {
-        setShops([]);
-        return;
-      }
-      setLoadingShops(true);
-      try {
-        const data = await getShops();
-        setShops(data);
-        
-        // Auto-select if none selected but we have shops
-        if (data.length > 0 && !selectedShopId) {
-          selectShop(data[0].id, data[0].name);
-        }
-      } catch (err) {
-        console.error("Failed to load shops", err);
-      } finally {
-        setLoadingShops(false);
-      }
+  const fetchShops = useCallback(async () => {
+    if (!accountId) {
+      setShops([]);
+      return;
     }
-    fetchShops();
+    setLoadingShops(true);
+    try {
+      const data = await getShops();
+      setShops(data);
+
+      if (data.length > 0 && !selectedShopId) {
+        selectShop(data[0].id, data[0].name);
+      }
+    } catch (err) {
+      console.error("Failed to load shops", err);
+    } finally {
+      setLoadingShops(false);
+    }
   }, [accountId, selectedShopId, selectShop]);
 
-  // Nettoyage automatique en cas de déconnexion ou changement de compte
+  useEffect(() => {
+    fetchShops();
+  }, [fetchShops]);
+
   useEffect(() => {
     if (!accountId) {
       clearShop();
     }
   }, [accountId, clearShop]);
 
-  const value = { selectedShopId, selectedShopName, selectShop, clearShop, shops, loadingShops };
+  const selectedShop = shops.find((s) => s.id === selectedShopId) || null;
+
+  const value = {
+    selectedShopId,
+    selectedShopName,
+    selectedShop,
+    selectShop,
+    clearShop,
+    refreshShops: fetchShops,
+    shops,
+    loadingShops,
+    isPreloadingOfflineData: isPreloading,
+  };
 
   return <ShopContext.Provider value={value}>{children}</ShopContext.Provider>;
 }

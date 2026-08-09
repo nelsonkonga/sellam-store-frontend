@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { login, register } from "../services/authService";
 import { useAuth } from "../context/AuthContext";
 import FormField from "../components/FormField";
 import DarkModeToggle from "../components/DarkModeToggle";
 
-// Les deux modes possibles pour cette page
+
 const MODES = {
   LOGIN: "login",
   REGISTER: "register",
@@ -13,10 +13,17 @@ const MODES = {
 
 export default function AuthPage() {
   const [mode, setMode] = useState(MODES.LOGIN);
-  const [form, setForm] = useState({ name: "", phoneNumber: "", password: "" });
+  const [form, setForm] = useState({ name: "", phoneNumber: "", email:"", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("reason") === "expired") {
+            setError("Votre session a expiré. Reconnectez-vous pour continuer.");
+        }
+    }, []);
+  
   const navigate = useNavigate();
   const { login: loginContext } = useAuth();
 
@@ -26,7 +33,7 @@ export default function AuthPage() {
   const toggleMode = () => {
     setMode(isLogin ? MODES.REGISTER : MODES.LOGIN);
     setError("");
-    setForm({ name: "", phoneNumber: "", password: "" });
+    setForm({ name: "", phoneNumber: "",email: "", password: "" });
   };
 
   const handleChange = (e) => {
@@ -41,13 +48,13 @@ export default function AuthPage() {
 
     try {
       const payload = isLogin
-        ? { phoneNumber: form.phoneNumber, password: form.password }
-        : form; // name + phoneNumber + password
+        ? { phoneNumber: form.phoneNumber, email: form.email, password: form.password }
+        : form; // name + phoneNumber + email + password
 
       const data = isLogin ? await login(payload) : await register(payload);
 
-      // Stocke token/accountId/name dans le contexte global + localStorage
-      loginContext({ ...data, phoneNumber: data.phoneNumber });
+      // Stocke token/accountId/userType/shopId/name dans le contexte global + localStorage
+      loginContext({ ...data, phoneNumber: data.phoneNumber, email: data.email, userType: data.userType, shopId: data.shopId });
 
       // Redirection vers la liste des boutiques
       navigate("/shops");
@@ -158,6 +165,16 @@ export default function AuthPage() {
             />
 
             <FormField
+                id="email"
+                label="Adresse Email"
+                type="email"
+                value={form.email}
+                onChange={handleChange}
+                placeholder="Ex: jean@abessolo.com"
+                autoComplete="email"
+            />
+
+            <FormField
               id="password"
               label="Mot de passe"
               type="password"
@@ -212,20 +229,23 @@ export default function AuthPage() {
             <div className="h-px flex-1 bg-white/10" />
           </div>
 
-          {/* Bouton Google OAuth — désactivé pour l'instant, avec tooltip natif */}
           <button
             type="button"
-            disabled
-            title="Bientôt disponible"
+            enabled
+            title="Disponible"
             className="flex w-full cursor-not-allowed items-center justify-center gap-2
                        rounded-xl border border-white/10 bg-white/5 py-3 text-sm font-medium
                        text-gray-400 opacity-70"
+            style={{padding:0}}
           >
+            <a
+                href={`${import.meta.env.VITE_API_URL || "http://localhost:8080/api"}/../oauth2/authorization/google`}
+                className="flex w-full items-center justify-center gap-2
+             rounded-xl border border-white/10 bg-white/5 py-3 text-sm font-medium
+             text-white transition hover:bg-white/10"
+            >
             <GoogleIcon />
-            Se connecter avec Google
-            <span className="ml-1 rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-semibold text-gray-500 dark:bg-gray-700 dark:text-gray-400">
-              Bientôt
-            </span>
+            Se connecter avec Google </a>
           </button>
         </div>
 
@@ -245,7 +265,7 @@ export default function AuthPage() {
   );
 }
 
-// Icône Google en SVG inline (pas de dépendance externe nécessaire)
+
 function GoogleIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
