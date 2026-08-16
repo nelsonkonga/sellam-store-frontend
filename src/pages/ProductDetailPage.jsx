@@ -28,6 +28,7 @@ const EMPTY_FORM = {
   stockQuantity: "",
   alertThreshold: "",
   category: "",
+  brand: "",
 };
 
 export default function ProductDetailPage() {
@@ -118,6 +119,7 @@ export default function ProductDetailPage() {
       stockQuantity: product.stockQuantity ?? "",
       alertThreshold: product.alertThreshold ?? "",
       category: product.category || "",
+      brand: product.brand || "",
     };
   }
 
@@ -152,14 +154,14 @@ export default function ProductDetailPage() {
     }
   }
 
-  // Gère la sélection d'un fichier image : preview locale via FileReader,
-  // aucun upload réel pour l'instant (voir uploadProductPicture dans productService)
+  // Gère la sélection d'un fichier image : preview locale via FileReader.
+  // La photo est uploadée séparément après la création/modification du produit.
   function handleFileSelect(file) {
     setSelectedFile(file);
     const reader = new FileReader();
     reader.onload = () => {
       setImagePreview(reader.result);
-      setForm((prev) => ({ ...prev, pictureUrl: reader.result }));
+      // N'ajoute pas la data URL au form — on va l'uploader séparément
     };
     reader.readAsDataURL(file);
   }
@@ -167,7 +169,7 @@ export default function ProductDetailPage() {
   function handleClearImage() {
     setSelectedFile(null);
     setImagePreview("");
-    setForm((prev) => ({ ...prev, pictureUrl: "" }));
+    // Ne modifie pas form.pictureUrl ici — elle contient l'URL serveur existante
   }
 
   // Validation des champs obligatoires avant soumission
@@ -209,10 +211,21 @@ export default function ProductDetailPage() {
         ? await updateProduct(id, payload)
         : await createProduct(payload);
 
-      // NOTE: si un fichier a été sélectionné, c'est ici qu'on appellerait
-      // uploadProductPicture(saved.id, selectedFile) une fois l'endpoint prêt.
+      // Si un fichier a été sélectionné, l'uploader maintenant
+      if (selectedFile) {
+        const uploadResult = await uploadProductPicture(saved.id, selectedFile);
+        if (uploadResult.pictureUrl) {
+          // Mettre à jour le produit avec la vraie URL de la photo
+          const updatedProduct = await updateProduct(saved.id, {
+            ...saved,
+            pictureUrl: uploadResult.pictureUrl,
+          });
+          upsertProduct(updatedProduct);
+        }
+      } else {
+        upsertProduct(saved);
+      }
 
-      upsertProduct(saved);
       navigate("/products");
     } catch (err) {
       const backendMessage =
@@ -383,32 +396,53 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            {/* Catégorie avec suggestions basées sur les catégories existantes */}
-            <div className="flex flex-col gap-1.5">
-              <label
-                htmlFor="category"
-                className="text-sm font-medium text-gray-300"
-              >
-                Catégorie
-              </label>
-              <input
-                id="category"
-                name="category"
-                type="text"
-                list="category-suggestions"
-                value={form.category}
-                onChange={handleChange}
-                placeholder="Ex: Épicerie"
-                className="w-full rounded-xl border border-white/10 glass px-4 py-3 text-base
-                           text-white placeholder-gray-500 shadow-sm outline-none
-                           transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30"
-              />
-              {/* datalist HTML natif : suggestions cliquables sans lib externe */}
-              <datalist id="category-suggestions">
-                {categorySuggestions.map((cat) => (
-                  <option key={cat} value={cat} />
-                ))}
-              </datalist>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {/* Catégorie avec suggestions basées sur les catégories existantes */}
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="category"
+                  className="text-sm font-medium text-gray-300"
+                >
+                  Catégorie
+                </label>
+                <input
+                  id="category"
+                  name="category"
+                  type="text"
+                  list="category-suggestions"
+                  value={form.category}
+                  onChange={handleChange}
+                  placeholder="Ex: Épicerie"
+                  className="w-full rounded-xl border border-white/10 glass px-4 py-3 text-base
+                             text-white placeholder-gray-500 shadow-sm outline-none
+                             transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30"
+                />
+                <datalist id="category-suggestions">
+                  {categorySuggestions.map((cat) => (
+                    <option key={cat} value={cat} />
+                  ))}
+                </datalist>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="brand"
+                  className="text-sm font-medium text-gray-300"
+                >
+                  Marque
+                </label>
+                <input
+                  id="brand"
+                  name="brand"
+                  type="text"
+                  value={form.brand}
+                  onChange={handleChange}
+                  placeholder="Ex: Nestlé"
+                  className="w-full rounded-xl border border-white/10 glass px-4 py-3 text-base
+                             text-white placeholder-gray-500 shadow-sm outline-none
+                             transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30"
+                />
+              </div>
             </div>
 
             {error && (

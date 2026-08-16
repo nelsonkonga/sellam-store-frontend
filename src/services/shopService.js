@@ -24,3 +24,15 @@ export async function updateShopSettings(shopId, settings) {
   const response = await api.patch(`/shops/${shopId}/settings`, settings);
   return response.data;
 }
+
+
+export async function uploadShopLogo(shopId, file) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await api.post(`/shops/${shopId}/logo`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+
+  return response.data.logoUrl;
+}

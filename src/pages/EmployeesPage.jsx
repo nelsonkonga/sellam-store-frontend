@@ -6,10 +6,12 @@ import {
 } from "lucide-react";
 import {
   listEmployees, createEmployee, updateEmployee,
-  changeEmployeePassword, toggleEmployeeActive, deleteEmployee
+  changeEmployeePassword, toggleEmployeeActive,
+  getEmployeePermissions, updateEmployeePermissions, deleteEmployee
 } from "../services/employeeService";
 import { useShop } from "../context/ShopContext";
 import { useAuth } from "../context/AuthContext";
+import PhoneNumberInput from "../components/PhoneNumberInput";
 import BottomNav from "../components/BottomNav";
 
 const ROLES = [
@@ -18,8 +20,27 @@ const ROLES = [
   { value: "SECRETARY", label: "Secrétaire", icon: ShieldAlert, color: "text-amber-400" },
 ];
 
+const PERMISSION_OPTIONS = [
+  { value: "VIEW_PRODUCTS", label: "Voir les produits" },
+  { value: "EDIT_PRODUCTS", label: "Modifier les produits" },
+  { value: "CREATE_INVOICE", label: "Créer des factures" },
+  { value: "EDIT_INVOICE", label: "Modifier les factures" },
+  { value: "DELETE_INVOICE_LINE", label: "Supprimer des lignes" },
+  { value: "VALIDATE_INVOICE", label: "Valider les factures" },
+  { value: "VIEW_SALES_HISTORY", label: "Voir l'historique des ventes" },
+  { value: "MANAGE_SHOP_SETTINGS", label: "Gérer les paramètres boutique" },
+  { value: "VIEW_DAILY_BALANCE", label: "Voir le bilan journalier" },
+  { value: "MANAGE_DAILY_BALANCE", label: "Gérer le bilan journalier" },
+  { value: "MANAGE_SALE_TYPES", label: "Gérer les types de vente" },
+];
+
 function getRoleInfo(role) {
   return ROLES.find(r => r.value === role) || ROLES[1];
+}
+
+function getPermissionLabel(permission) {
+  const match = PERMISSION_OPTIONS.find(item => item.value === permission);
+  return match ? match.label : permission.replace(/_/g, " ").toLowerCase();
 }
 
 export default function EmployeesPage() {
@@ -30,9 +51,14 @@ export default function EmployeesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [showPasswordModal, setShowPasswordModal] = useState(null);
+  const [showPermissionsModal, setShowPermissionsModal] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [formData, setFormData] = useState({ name: "", phoneNumber: "", password: "", role: "CASHIER" });
   const [newPassword, setNewPassword] = useState("");
+  const [permissionsState, setPermissionsState] = useState({});
+  const [permissionsLoading, setPermissionsLoading] = useState(false);
+  const [permissionsError, setPermissionsError] = useState("");
+  const [savingPermissions, setSavingPermissions] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const navigate = useNavigate();
@@ -137,6 +163,70 @@ export default function EmployeesPage() {
       setError("Erreur lors de la suppression.");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  function buildPermissionsState(data = {}) {
+    const defaultPermissions = new Set(data.defaultPermissions || []);
+    const grantedOverrides = new Set(data.grantedOverrides || []);
+    const revokedOverrides = new Set(data.revokedOverrides || []);
+
+    return Object.fromEntries(
+      PERMISSION_OPTIONS.map(({ value }) => {
+        if (revokedOverrides.has(value)) return [value, "revoked"];
+        if (grantedOverrides.has(value)) return [value, "granted"];
+        return [value, defaultPermissions.has(value) ? "default" : "revoked"];
+      })
+    );
+  }
+
+  async function openPermissionsModal(emp) {
+    setShowPermissionsModal(emp);
+    setPermissionsError("");
+    setPermissionsLoading(true);
+
+    try {
+      const permissions = await getEmployeePermissions(emp.id);
+      setPermissionsState(buildPermissionsState(permissions));
+    } catch (err) {
+      setPermissionsError("Impossible de charger les permissions de cet employé.");
+    } finally {
+      setPermissionsLoading(false);
+    }
+  }
+
+  function updatePermissionState(permission, nextState) {
+    setPermissionsState(prev => ({ ...prev, [permission]: nextState }));
+  }
+
+  async function handleSavePermissions() {
+    if (!showPermissionsModal) return;
+
+    setSavingPermissions(true);
+    setPermissionsError("");
+
+    try {
+      const grantedOverrides = [];
+      const revokedOverrides = [];
+
+      PERMISSION_OPTIONS.forEach(({ value }) => {
+        const currentState = permissionsState[value] || "default";
+        if (currentState === "granted") grantedOverrides.push(value);
+        if (currentState === "revoked") revokedOverrides.push(value);
+      });
+
+      await updateEmployeePermissions(showPermissionsModal.id, {
+        grantedOverrides,
+        revokedOverrides,
+      });
+
+      setShowPermissionsModal(null);
+      setPermissionsState({});
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data?.error || "Erreur lors de la sauvegarde des permissions.";
+      setPermissionsError(msg);
+    } finally {
+      setSavingPermissions(false);
     }
   }
 
@@ -260,6 +350,13 @@ export default function EmployeesPage() {
                         <Edit3 size={16} className="text-blue-400" />
                       </button>
                       <button
+                        onClick={() => openPermissionsModal(emp)}
+                        className="p-2 rounded-lg hover:bg-white/10 transition"
+                        title="Permissions"
+                      >
+                        <ShieldCheck size={16} className="text-emerald-400" />
+                      </button>
+                      <button
                         onClick={() => { setShowPasswordModal(emp); setNewPassword(""); }}
                         className="p-2 rounded-lg hover:bg-white/10 transition"
                         title="Changer le mot de passe"
@@ -301,16 +398,12 @@ export default function EmployeesPage() {
                   placeholder="Ex: Amadou Diallo"
                 />
               </div>
-              <div>
-                <label className="block text-xs text-gray-400 mb-1.5">Numéro de téléphone</label>
-                <input
-                  type="tel" required
-                  value={formData.phoneNumber}
-                  onChange={e => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))}
-                  className="w-full rounded-xl bg-white/5 border border-white/10 py-2.5 px-3 text-sm text-white focus:border-brand-400 focus:outline-none transition"
-                  placeholder="Ex: 6XXXXXXXX"
-                />
-              </div>
+              <PhoneNumberInput
+                label="Numéro de téléphone"
+                value={formData.phoneNumber}
+                onChange={(e164) => setFormData(prev => ({ ...prev, phoneNumber: e164 }))}
+                placeholder="690000000"
+              />
               {!editingEmployee && (
                 <div>
                   <label className="block text-xs text-gray-400 mb-1.5">Mot de passe</label>
@@ -378,6 +471,70 @@ export default function EmployeesPage() {
               <button onClick={() => setShowPasswordModal(null)} className="flex-1 rounded-xl bg-white/5 border border-white/10 py-2.5 text-sm font-medium hover:bg-white/10 transition">Annuler</button>
               <button onClick={handleChangePassword} disabled={submitting} className="flex-1 btn-gradient rounded-xl py-2.5 text-sm font-semibold disabled:opacity-50">
                 {submitting ? "…" : "Confirmer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Permissions */}
+      {showPermissionsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowPermissionsModal(null)}>
+          <div className="w-full max-w-3xl max-h-[85vh] overflow-y-auto rounded-3xl glass p-5" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-bold">Permissions</h2>
+                <p className="text-sm text-gray-400">{showPermissionsModal.name}</p>
+              </div>
+              <button onClick={() => setShowPermissionsModal(null)} className="p-1.5 rounded-lg hover:bg-white/10 transition"><X size={20} /></button>
+            </div>
+
+            {permissionsError && (
+              <div className="mb-4 rounded-xl bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-300">{permissionsError}</div>
+            )}
+
+            {permissionsLoading ? (
+              <div className="py-10 text-center text-sm text-gray-400">Chargement des permissions…</div>
+            ) : (
+              <div className="space-y-3">
+                {PERMISSION_OPTIONS.map(({ value, label }) => {
+                  const currentState = permissionsState[value] || "default";
+
+                  return (
+                    <div key={value} className="rounded-xl border border-white/10 bg-white/5 p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-sm text-white font-medium">{label}</span>
+                        <div className="flex rounded-lg border border-white/10 overflow-hidden bg-white/5">
+                          {[
+                            { value: "default", label: "Par défaut" },
+                            { value: "granted", label: "Autoriser" },
+                            { value: "revoked", label: "Refuser" },
+                          ].map(option => (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => updatePermissionState(value, option.value)}
+                              className={`px-2 py-1.5 text-[10px] font-medium transition ${
+                                currentState === option.value
+                                  ? "bg-brand-400 text-white"
+                                  : "text-gray-300 hover:bg-white/10"
+                              }`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="mt-5 flex gap-2">
+              <button onClick={() => setShowPermissionsModal(null)} className="flex-1 rounded-xl bg-white/5 border border-white/10 py-2.5 text-sm font-medium hover:bg-white/10 transition">Annuler</button>
+              <button onClick={handleSavePermissions} disabled={savingPermissions || permissionsLoading} className="flex-1 btn-gradient rounded-xl py-2.5 text-sm font-semibold disabled:opacity-50 transition">
+                {savingPermissions ? "Enregistrement…" : "Sauvegarder"}
               </button>
             </div>
           </div>

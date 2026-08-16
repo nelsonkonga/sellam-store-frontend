@@ -7,6 +7,8 @@ import { ProductsProvider } from "./context/ProductsContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 import AuthPage from "./pages/AuthPage";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
 import ShopsPage from "./pages/ShopsPage";
 import DashboardPage from "./pages/DashboardPage";
 import ProductsPage from "./pages/ProductsPage";
@@ -21,17 +23,9 @@ import VerifyEmailPage from "./pages/VerifyEmailPage.jsx";
 import InvoiceDetailPage from "./pages/InvoiceDetailPage.jsx";
 import InvoicesPage from "./pages/InvoicesPage.jsx";
 import EmployeesPage from "./pages/EmployeesPage.jsx";
-
-// Page vide en attendant l'implémentation du mot de passe oublié
-function ForgotPasswordPlaceholder() {
-    return (
-        <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-950">
-            <p className="text-gray-700 dark:text-gray-300">
-                Page /forgot-password à venir
-            </p>
-        </div>
-    );
-}
+import ShopSettingsPage from "./pages/ShopSettingsPage.jsx";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
+import ChatPage from "./pages/ChatPage.jsx";
 
 export default function App() {
     useAutoSync();
@@ -47,9 +41,9 @@ export default function App() {
                             <Routes>
                                 {/* Routes publiques */}
                                 <Route path="/" element={<LandingPage/>}/>
-                                <Route path="/login" element={<AuthPage/>}/>
-                                <Route path="/register" element={<AuthPage/>}/>
-                                <Route path="/forgot-password" element={<ForgotPasswordPlaceholder/>}/>
+                                <Route path="/login" element={<LoginPage/>}/>
+                                <Route path="/register" element={<RegisterPage/>}/>
+                                <Route path="/forgot-password" element={<ForgotPasswordPage/>}/>
                                 <Route path="/oauth-callback" element={<OAuthCallbackPage/>}/>
                                 <Route path="/verify-email" element={<VerifyEmailPage/>}/>
                                 <Route path="/invoices" element={<ProtectedRoute><InvoicesPage /></ProtectedRoute>} />
@@ -135,6 +129,22 @@ export default function App() {
                                     element={
                                         <ProtectedRoute>
                                             <ProfileSettingsPage/>
+                                        </ProtectedRoute>
+                                    }
+                                />
+                                <Route
+                                    path="/settings/shop"
+                                    element={
+                                        <ProtectedRoute>
+                                            <ShopSettingsPage/>
+                                        </ProtectedRoute>
+                                    }
+                                />
+                                <Route
+                                    path="/chat"
+                                    element={
+                                        <ProtectedRoute>
+                                            <ChatPage/>
                                         </ProtectedRoute>
                                     }
                                 />

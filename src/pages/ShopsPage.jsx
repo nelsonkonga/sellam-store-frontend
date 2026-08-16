@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getShops, createShop } from "../services/shopService";
+import { getShops, createShop, uploadShopLogo } from "../services/shopService";
 import { useShop } from "../context/ShopContext";
 import ShopCard from "../components/ShopCard";
 import Modal from "../components/Modal";
@@ -13,7 +13,9 @@ export default function ShopsPage() {
 
   // État du formulaire de création (dans la modal)
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [form, setForm] = useState({ name: "", address: "", logoUrl: "" });
+  const [form, setForm] = useState({ name: "", address: "" });
+  const [logoFile, setLogoFile] = useState(null);
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState("");
   const [createError, setCreateError] = useState("");
   const [creating, setCreating] = useState(false);
 
@@ -44,15 +46,26 @@ export default function ShopsPage() {
     navigate("/dashboard");
   }
 
-  // Placeholder pour l'édition (à brancher plus tard sur une vraie page/modal d'édition)
+  // Ouvre la page de paramètres de la boutique sélectionnée
   function handleEdit(shop) {
-    // TODO: ouvrir un formulaire d'édition pré-rempli avec les infos de `shop`
-    console.log("Modifier la boutique :", shop.id);
+    selectShop(shop.id, shop.name);
+    navigate("/settings/shop");
   }
 
   function handleFormChange(e) {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+  }
+
+  function handleLogoFileChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) {
+      setLogoFile(null);
+      setLogoPreviewUrl("");
+      return;
+    }
+    setLogoFile(file);
+    setLogoPreviewUrl(URL.createObjectURL(file));
   }
 
   async function handleCreateSubmit(e) {
@@ -61,10 +74,26 @@ export default function ShopsPage() {
     setCreating(true);
 
     try {
-      const newShop = await createShop(form);
+      let newShop = await createShop(form);
+
+      if (logoFile) {
+        try {
+          const logoUrl = await uploadShopLogo(newShop.id, logoFile);
+          newShop = { ...newShop, logoUrl };
+        } catch (logoErr) {
+          // La boutique est créée mais le logo a échoué : on n'annule pas
+          // la création, on informe juste l'utilisateur.
+          setCreateError(
+            "Boutique créée, mais l'upload du logo a échoué. Vous pourrez réessayer depuis les paramètres de la boutique."
+          );
+        }
+      }
+
       setShops((prev) => [...prev, newShop]);
       setShowCreateModal(false);
-      setForm({ name: "", address: "", logoUrl: "" });
+      setForm({ name: "", address: "" });
+      setLogoFile(null);
+      setLogoPreviewUrl("");
     } catch (err) {
       const backendMessage =
         err.response?.data?.message || err.response?.data?.error;
@@ -79,7 +108,9 @@ export default function ShopsPage() {
   function closeCreateModal() {
     setShowCreateModal(false);
     setCreateError("");
-    setForm({ name: "", address: "", logoUrl: "" });
+    setForm({ name: "", address: "" });
+    setLogoFile(null);
+    setLogoPreviewUrl("");
   }
 
   return (
@@ -165,32 +196,34 @@ export default function ShopsPage() {
               onChange={handleFormChange}
               placeholder="Ex: Rue du Marché, Yaoundé"
             />
-            <FormField
-              id="logoUrl"
-              label="URL du logo (optionnel)"
-              value={form.logoUrl}
-              onChange={handleFormChange}
-              placeholder="https://..."
-              required={false}
-            />
-
-            {/* Aperçu du logo si une URL a été saisie */}
-            {form.logoUrl && (
-              <div className="flex items-center gap-3">
-                <img
-                  src={form.logoUrl}
-                  alt="Aperçu du logo"
-                  className="h-14 w-14 rounded-xl object-cover ring-1 ring-gray-200
-                             dark:ring-gray-700"
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                  }}
-                />
-                <span className="text-xs text-gray-400 dark:text-gray-500">
-                  Aperçu du logo
-                </span>
-              </div>
-            )}
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-gray-300">
+                Logo de la boutique (optionnel)
+              </label>
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={handleLogoFileChange}
+                className="block w-full text-sm text-gray-300
+                           file:mr-4 file:rounded-lg file:border-0
+                           file:bg-white/10 file:px-4 file:py-2
+                           file:text-sm file:font-medium file:text-white
+                           hover:file:bg-white/20"
+              />
+              {logoPreviewUrl && (
+                <div className="mt-3 flex items-center gap-3">
+                  <img
+                    src={logoPreviewUrl}
+                    alt="Aperçu du logo"
+                    className="h-14 w-14 rounded-xl object-cover ring-1 ring-gray-200
+                               dark:ring-gray-700"
+                  />
+                  <span className="text-xs text-gray-400 dark:text-gray-500">
+                    Aperçu du logo sélectionné
+                  </span>
+                </div>
+              )}
+            </div>
 
             {createError && (
               <div

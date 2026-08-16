@@ -2,8 +2,7 @@ import api from "./api";
 
 /**
  * Met à jour la photo de profil de l'utilisateur.
- * TODO: pas encore branché dans l'UI (preview locale uniquement pour l'instant) —
- * prêt à être appelé une fois que le flux d'upload réel sera voulu.
+ * Retourne l'URL publique de la photo stockée sur Supabase.
  * @param {File} file
  */
 export async function updateProfilePicture(file) {

@@ -4,35 +4,97 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(),
+  plugins: [
+    react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'robots.txt'],
+      includeAssets: ['favicon.ico', 'robots.txt', 'sellam-logo.png', 'icon-192.png', 'icon-256.png', 'icon-384.png', 'icon-512.png', 'icon-maskable.png'],
       manifest: {
-        name: 'Sellam - Gestion de boutique',
+        id: '/',
+        name: 'Sellam',
         short_name: 'Sellam',
-        description: 'Gérez vos boutiques facilement',
+        description: 'Gérez vos boutiques, ventes et bilans en toute simplicité.',
         theme_color: '#6d28d9',
-        background_color: '#0f0f1a',
+        background_color: '#f5f3ff',
         display: 'standalone',
+        display_override: ['window-controls-overlay', 'standalone', 'minimal-ui'],
         start_url: '/',
+        scope: '/',
+        screenshots: [
+          {
+            src: '/screenshots/sellam-wide.png',
+            sizes: '1280x720',
+            type: 'image/png',
+            form_factor: 'wide',
+            label: 'Sellam dashboard desktop'
+          },
+          {
+            src: '/screenshots/sellam-mobile.png',
+            sizes: '390x844',
+            type: 'image/png',
+            label: 'Sellam dashboard mobile'
+          }
+        ],
         icons: [
           {
             src: 'icon-192.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: 'icon-256.png',
+            sizes: '256x256',
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: 'icon-384.png',
+            sizes: '384x384',
+            type: 'image/png',
+            purpose: 'any'
           },
           {
             src: 'icon-512.png',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: 'icon-maskable.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
           }
         ]
       },
       workbox: {
-      
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
-        runtimeCaching: []
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,json}'],
+        cleanupOutdatedCaches: true,
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.origin === self.location.origin && /\/api\//i.test(url.pathname),
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'sellam-api-cache',
+              networkTimeoutSeconds: 10,
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          {
+            urlPattern: ({ request }) => ['document', 'script', 'style', 'image', 'font'].includes(request.destination),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'sellam-assets-cache',
+              expiration: {
+                maxEntries: 200,
+                maxAgeSeconds: 60 * 60 * 24 * 30
+              }
+            }
+          }
+        ]
       }
     })
   ],

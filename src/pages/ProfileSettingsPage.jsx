@@ -1,52 +1,53 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { LogOut, Users, Clock, ChevronRight, Printer } from "lucide-react";
-import { updateThemePreference } from "../services/profileService";
+import { LogOut, Users, Clock, ChevronRight, Store } from "lucide-react";
+import { updateThemePreference, updateProfilePicture } from "../services/profileService";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import ProfilePictureUpload from "../components/ProfilePictureUpload";
 import ThemeSelector from "../components/ThemeSelector";
 import BottomNav from "../components/BottomNav";
 import { useShop } from "../context/ShopContext.jsx";
-import { updateShopSettings } from "../services/shopService.js";
 
 export default function ProfileSettingsPage() {
-  const [profilePicturePreview, setProfilePicturePreview] = useState(() => localStorage.getItem("profilePicturePreview") || "");
-  const [selectedFile, setSelectedFile] = useState(null); // gardé pour un futur upload réel
+  const [profilePicturePreview, setProfilePicturePreview] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
   const [themeSaving, setThemeSaving] = useState(false);
   const [themeError, setThemeError] = useState("");
 
   const navigate = useNavigate();
-  const { name, logout, phoneNumber, profilePictureUrl } = useAuth();
+  const { name, logout, phoneNumber, profilePictureUrl, isManager } = useAuth();
   const { theme, setTheme } = useTheme();
 
-  const { selectedShopId, selectedShop, refreshShops } = useShop();
-  const [autoPrintInvoices, setAutoPrintInvoices] = useState(selectedShop?.autoPrintInvoices ?? false);
-
-  // Resynchronise le toggle si la boutique sélectionnée change (ou se recharge)
-  useEffect(() => {
-    setAutoPrintInvoices(selectedShop?.autoPrintInvoices ?? false);
-  }, [selectedShop]);
-
-  async function handleToggleAutoPrint(value) {
-    setAutoPrintInvoices(value); // optimiste
-    try {
-      await updateShopSettings(selectedShopId, { autoPrintInvoices: value });
-      if (refreshShops) await refreshShops();
-    } catch (err) {
-      setAutoPrintInvoices(!value); // rollback si échec
-    }
-  }
+  const { selectedShop } = useShop();
 
   function handlePictureSelect(file) {
     setSelectedFile(file);
     const reader = new FileReader();
     reader.onload = () => {
       setProfilePicturePreview(reader.result);
-      localStorage.setItem("profilePicturePreview", reader.result);
+      // Télécharger immédiatement
+      uploadProfilePictureFile(file);
     };
     reader.readAsDataURL(file);
-    // NOTE: appeler ici updateProfilePicture(file) une fois l'endpoint prêt
+  }
+
+  async function uploadProfilePictureFile(file) {
+    if (!file) return;
+    
+    setUploading(true);
+    try {
+      const result = await updateProfilePicture(file);
+      if (result.profilePictureUrl) {
+        // La photo a été uploadée ; la page se rechargera quand l'auth context se met à jour
+        // ou le composant affichera l'URL retournée
+      }
+    } catch (err) {
+      console.error("Erreur lors de l'upload de la photo de profil", err);
+    } finally {
+      setUploading(false);
+    }
   }
 
   // Applique le changement immédiatement dans toute l'app (ThemeContext),
@@ -133,31 +134,6 @@ export default function ProfileSettingsPage() {
             )}
           </div>
 
-          {/* Impression automatique des factures */}
-          <div className="rounded-2xl glass p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-500/10 text-brand-400">
-                  <Printer size={18} />
-                </div>
-                <div>
-                  <p className="font-medium text-white">Impression automatique</p>
-                  <p className="text-xs text-gray-400">Imprime chaque facture dès sa validation</p>
-                </div>
-              </div>
-              <button
-                  type="button"
-                  onClick={() => handleToggleAutoPrint(!autoPrintInvoices)}
-                  aria-label="Activer/désactiver l'impression automatique"
-                  className={`h-6 w-11 flex-shrink-0 rounded-full transition ${autoPrintInvoices ? "bg-brand-500" : "bg-white/20"}`}
-              >
-              <span
-                  className={`block h-5 w-5 rounded-full bg-white transition-transform ${autoPrintInvoices ? "translate-x-5" : "translate-x-0.5"}`}
-              />
-              </button>
-            </div>
-          </div>
-
           {/* Lien vers les réglages du bilan journalier (heure + rappels) */}
           <Link
               to="/settings/balance"
@@ -177,31 +153,44 @@ export default function ProfileSettingsPage() {
             <ChevronRight size={18} className="text-gray-500" />
           </Link>
 
-          {/* Gestion des employés — pas encore disponible */}
-          <div className="rounded-2xl glass p-5 shadow-sm opacity-75">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-gray-500">
+          {isManager && (
+            <Link
+                to="/employees"
+                className="flex items-center gap-3 rounded-2xl glass p-5 shadow-sm transition hover:shadow-md"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-500/10 text-brand-400">
                 <Users size={18} />
               </div>
               <div className="flex-1">
-                <p className="font-medium text-gray-300">
+                <p className="font-medium text-white">
                   Gestion des employés
                 </p>
-                <p className="text-xs text-gray-500">
-                  Bientôt disponible
+                <p className="text-xs text-gray-400">
+                  Ajouter, modifier et gérer l’équipe
                 </p>
               </div>
+              <ChevronRight size={18} className="text-gray-500" />
+            </Link>
+          )}
+
+          {/* Lien vers les réglages de la boutique */}
+          <Link
+              to="/settings/shop"
+              className="flex items-center gap-3 rounded-2xl glass p-5 shadow-sm transition hover:shadow-md"
+          >
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-500/10 text-brand-400">
+              <Store size={18} />
             </div>
-            <button
-                type="button"
-                disabled
-                title="Bientôt disponible"
-                className="mt-3 w-full cursor-not-allowed rounded-xl bg-white/5 py-2.5 text-sm
-                       font-medium text-gray-500"
-            >
-              Gérer les employés
-            </button>
-          </div>
+            <div className="flex-1">
+              <p className="font-medium text-white">
+                Paramètres de la boutique
+              </p>
+              <p className="text-xs text-gray-400">
+                Logo, téléphone, numéro fiscal
+              </p>
+            </div>
+            <ChevronRight size={18} className="text-gray-500" />
+          </Link>
 
           {/* Déconnexion */}
           <button

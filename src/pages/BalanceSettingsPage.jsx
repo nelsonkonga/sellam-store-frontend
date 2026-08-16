@@ -23,6 +23,9 @@ const DAYS = [
 const DEFAULT_SETTING = {
   balanceTime: "18:00",
   reminderFrequencyHours: 3,
+  enabled: true,
+  openingTime: "09:00",
+  closingTime: "21:00",
 };
 
 export default function BalanceSettingsPage() {
@@ -60,6 +63,9 @@ export default function BalanceSettingsPage() {
                 ? {
                     balanceTime: existing.balanceTime,
                     reminderFrequencyHours: existing.reminderFrequencyHours,
+                    enabled: existing.enabled !== false,
+                    openingTime: existing.openingTime || DEFAULT_SETTING.openingTime,
+                    closingTime: existing.closingTime || DEFAULT_SETTING.closingTime,
                   }
                 : { ...DEFAULT_SETTING },
             ];
@@ -91,7 +97,10 @@ export default function BalanceSettingsPage() {
     const saved = savedSettings[dayKey];
     return (
       current.balanceTime !== saved.balanceTime ||
-      Number(current.reminderFrequencyHours) !== Number(saved.reminderFrequencyHours)
+      current.openingTime !== saved.openingTime ||
+      current.closingTime !== saved.closingTime ||
+      Number(current.reminderFrequencyHours) !== Number(saved.reminderFrequencyHours) ||
+      current.enabled !== saved.enabled
     );
   }
 
@@ -103,6 +112,9 @@ export default function BalanceSettingsPage() {
         dayOfWeek: dayKey,
         balanceTime: settings[dayKey].balanceTime,
         reminderFrequencyHours: Number(settings[dayKey].reminderFrequencyHours),
+        enabled: settings[dayKey].enabled,
+        openingTime: settings[dayKey].openingTime,
+        closingTime: settings[dayKey].closingTime,
       });
       setSavedSettings((prev) => ({ ...prev, [dayKey]: settings[dayKey] }));
       setJustSavedDays((prev) => ({ ...prev, [dayKey]: true }));
@@ -173,10 +185,16 @@ export default function BalanceSettingsPage() {
               label={day.label}
               balanceTime={settings[day.key].balanceTime}
               reminderFrequencyHours={settings[day.key].reminderFrequencyHours}
+              enabled={settings[day.key].enabled}
+              openingTime={settings[day.key].openingTime}
+              closingTime={settings[day.key].closingTime}
               onChangeTime={(value) => updateDay(day.key, { balanceTime: value })}
               onChangeFrequency={(value) =>
                 updateDay(day.key, { reminderFrequencyHours: value })
               }
+              onToggleEnabled={(value) => updateDay(day.key, { enabled: value })}
+              onChangeOpeningTime={(value) => updateDay(day.key, { openingTime: value })}
+              onChangeClosingTime={(value) => updateDay(day.key, { closingTime: value })}
               isDirty={isDayDirty(day.key)}
               isSaving={!!savingDays[day.key]}
               justSaved={!!justSavedDays[day.key]}

@@ -24,7 +24,16 @@ export async function toggleEmployeeActive(userId) {
   return data;
 }
 
+export async function getEmployeePermissions(userId) {
+  const { data } = await api.get(`/users/${userId}/permissions`);
+  return data;
+}
+
+export async function updateEmployeePermissions(userId, payload) {
+  const { data } = await api.put(`/users/${userId}/permissions`, payload);
+  return data;
+}
+
 export async function deleteEmployee(userId) {
   await api.delete(`/users/${userId}`);
 }
-//hey

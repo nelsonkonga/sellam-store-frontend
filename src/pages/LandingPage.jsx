@@ -207,10 +207,7 @@ function Navbar({ onNavigate }) {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 lg:px-8">
         {/* Logo */}
         <a href="#hero" className="flex items-center gap-2.5 group">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-blue-500 text-white font-bold text-sm shadow-lg shadow-brand-500/20 group-hover:shadow-brand-500/40 transition-shadow">
-            S
-          </div>
-          <span className="text-lg font-bold text-white">Sellam</span>
+          <img src="/sellam-logo.png" alt="Sellam" className="h-32 w-auto object-contain" />
         </a>
 
         {/* Desktop links */}
@@ -705,10 +702,7 @@ function Footer() {
         <div className="flex flex-col items-center gap-8 sm:flex-row sm:justify-between">
           {/* Logo */}
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-blue-500 text-white font-bold text-xs">
-              S
-            </div>
-            <span className="text-base font-bold text-white">Sellam</span>
+            <img src="/sellam-logo.png" alt="Sellam" className="h-32  w-auto object-contain" />
           </div>
 
           {/* Links */}

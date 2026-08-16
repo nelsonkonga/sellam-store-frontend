@@ -4,6 +4,7 @@ import { Wallet, TrendingUp, AlertTriangle, Plus } from "lucide-react";
 import { getProducts } from "../services/productService";
 import { getTodaySales } from "../services/saleService";
 import { listInvoices } from "../services/invoiceService";
+import { getNotifications } from "../services/notificationService";
 import { useAuth } from "../context/AuthContext";
 import { useShop } from "../context/ShopContext";
 import DashboardHeader from "../components/DashboardHeader";
@@ -23,13 +24,14 @@ export default function DashboardPage() {
   const [products, setProducts] = useState([]);
   const [sales, setSales] = useState([]);
   const [invoices, setInvoices] = useState([]);
+  const [hasNotifications, setHasNotifications] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingPeriod, setLoadingPeriod] = useState(false);
   const [error, setError] = useState("");
 
   const navigate = useNavigate();
   const { name } = useAuth();
-  const { selectedShopId: shopId, selectedShopName } = useShop();
+  const { selectedShopId: shopId, selectedShopName, selectedShop } = useShop();
 
   // Charge produits + ventes du jour dès qu'on connaît la boutique active
   useEffect(() => {
@@ -41,14 +43,28 @@ export default function DashboardPage() {
 
     async function fetchDashboardData() {
       try {
-        const [productsData, salesData, invoicesData] = await Promise.all([
+        const [productsData, salesData, invoicesData, notificationsData] = await Promise.all([
           getProducts(shopId),
           getTodaySales(shopId),
           listInvoices(shopId),
+          getNotifications(shopId),
         ]);
         setProducts(productsData);
         setSales(salesData);
         setInvoices(invoicesData);
+
+        if (Array.isArray(notificationsData) && notificationsData.length > 0) {
+          const lastReadIso = localStorage.getItem(`sellam_read_notifications_${shopId}`);
+          if (!lastReadIso) {
+            setHasNotifications(true);
+          } else {
+            const lastReadTime = new Date(lastReadIso).getTime();
+            const hasNew = notificationsData.some(n => new Date(n.createdAt).getTime() > lastReadTime);
+            setHasNotifications(hasNew);
+          }
+        } else {
+          setHasNotifications(false);
+        }
       } catch (err) {
         setError("Impossible de charger les données du tableau de bord.");
       } finally {
@@ -58,6 +74,9 @@ export default function DashboardPage() {
     fetchDashboardData();
   }, [shopId, navigate]); // Initial load
 
+  const handleMarkAsRead = () => {
+    setHasNotifications(false);
+  };
 
   // Calculs dérivés des données brutes — recalculés uniquement quand la source change
   const totalSalesToday = sales.reduce((sum, sale) => sum + (sale.totalPrice || 0), 0);
@@ -71,10 +90,11 @@ export default function DashboardPage() {
       <OfflineBanner />
 
       <DashboardHeader
-        shopName={selectedShopName || "Ma Boutique"} // TODO: le nom provient maintenant de ShopContext
+        shopName={selectedShopName || "Ma Boutique"}
         userName={name}
-        avatarUrl={null} // TODO: brancher la vraie photo de profil quand l'API l'exposera
-        hasNotifications={false}
+        shopLogoUrl={selectedShop?.logoUrl || null}
+        hasNotifications={hasNotifications}
+        onMarkAsRead={handleMarkAsRead}
       />
 
       <main className="px-5 mx-auto max-w-5xl">

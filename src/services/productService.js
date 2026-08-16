@@ -52,9 +52,7 @@ export async function updateProduct(id, data) {
 
 /**
  * Upload de la photo d'un produit.
- * TODO: à brancher réellement quand l'endpoint backend sera prêt.
- * Pour l'instant, la page produit ne fait qu'une preview locale (FileReader)
- * et n'appelle pas cette fonction — elle est prête à être branchée plus tard.
+ * Retourne l'URL publique de la photo stockée sur Supabase.
  * @param {string} productId
  * @param {File} file
  */

@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, ChevronDown, Store } from "lucide-react";
+import { Bell, ChevronDown, MessageCircleMore, Store } from "lucide-react";
 import DarkModeToggle from "./DarkModeToggle";
 import NotificationPanel from "./NotificationPanel";
 import { useShop } from "../context/ShopContext";
 
 /**
  * Header du dashboard.
- * - Avatar : affiche la photo de profil si disponible, sinon l'initiale du nom sur fond coloré.
+ * - Avatar : affiche le logo de la boutique si disponible, sinon l'initiale du nom sur fond coloré.
  * - hasNotifications pilote le petit badge rouge sur la cloche.
  */
-export default function DashboardHeader({ userName, avatarUrl, hasNotifications }) {
+export default function DashboardHeader({ userName, shopLogoUrl, hasNotifications, onMarkAsRead }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const navigate = useNavigate();
   const { shops, selectedShopId, selectShop } = useShop();
@@ -25,10 +25,10 @@ export default function DashboardHeader({ userName, avatarUrl, hasNotifications 
     <>
       <header className="flex items-center justify-between px-5 pb-4 pt-6">
         <div className="flex min-w-0 items-center gap-3">
-          {avatarUrl ? (
+          {shopLogoUrl ? (
             <img
-              src={avatarUrl}
-              alt={userName}
+              src={shopLogoUrl}
+              alt={shopNameDisplay}
               className="h-11 w-11 flex-shrink-0 rounded-full object-cover
                          ring-2 ring-white dark:ring-gray-800"
             />
@@ -69,6 +69,18 @@ export default function DashboardHeader({ userName, avatarUrl, hasNotifications 
         </div>
 
         <div className="flex flex-shrink-0 items-center gap-2">
+          {/* Bouton Service client */}
+          <button
+            type="button"
+            onClick={() => navigate('/chat')}
+            title="Service client"
+            className="relative flex h-10 w-10 items-center justify-center rounded-full
+                       bg-blue-100 text-blue-600 transition hover:bg-blue-200
+                       dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
+          >
+            <MessageCircleMore size={18} />
+          </button>
+
           {/* Bouton Mes Boutiques */}
           <button
             type="button"
@@ -84,7 +96,7 @@ export default function DashboardHeader({ userName, avatarUrl, hasNotifications 
           {/* Icône notifications avec badge rouge conditionnel */}
           <button
             type="button"
-            onClick={() => setShowNotifications(true)}
+            onClick={(e) => { e.stopPropagation(); setShowNotifications(true); }}
             aria-label="Notifications"
             className="relative flex h-10 w-10 items-center justify-center rounded-full
                        bg-gray-100 text-gray-600 transition hover:bg-gray-200
@@ -101,7 +113,7 @@ export default function DashboardHeader({ userName, avatarUrl, hasNotifications 
       </header>
 
       {showNotifications && (
-        <NotificationPanel onClose={() => setShowNotifications(false)} />
+        <NotificationPanel onClose={() => setShowNotifications(false)} onMarkAsRead={onMarkAsRead} />
       )}
     </>
   );
