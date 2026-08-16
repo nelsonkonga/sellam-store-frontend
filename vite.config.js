@@ -20,21 +20,22 @@ export default defineConfig({
         display_override: ['window-controls-overlay', 'standalone', 'minimal-ui'],
         start_url: '/',
         scope: '/',
-        screenshots: [
-          {
-            src: '/screenshots/sellam-wide.png',
-            sizes: '1280x720',
-            type: 'image/png',
-            form_factor: 'wide',
-            label: 'Sellam dashboard desktop'
-          },
-          {
-            src: '/screenshots/sellam-mobile.png',
-            sizes: '390x844',
-            type: 'image/png',
-            label: 'Sellam dashboard mobile'
-          }
-        ],
+        // Screenshots: uncomment when images are added to /public/screenshots/
+        // screenshots: [
+        //   {
+        //     src: '/screenshots/sellam-wide.png',
+        //     sizes: '1280x720',
+        //     type: 'image/png',
+        //     form_factor: 'wide',
+        //     label: 'Sellam dashboard desktop'
+        //   },
+        //   {
+        //     src: '/screenshots/sellam-mobile.png',
+        //     sizes: '390x844',
+        //     type: 'image/png',
+        //     label: 'Sellam dashboard mobile'
+        //   }
+        // ],
         icons: [
           {
             src: 'icon-192.png',
