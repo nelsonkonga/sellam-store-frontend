@@ -2,31 +2,44 @@ import { v4 as uuidv4 } from 'uuid';
 import db from '../db/localDb.js';
 import api from './api';
 
-export async function registerSaleOfflineFirst(shopId, productId, quantity) {
+export async function saveInvoiceOfflineFirst(shopId, invoiceData) {
     const localActionId = uuidv4();
 
+    // invoiceData expected to have:
+    // { customerName, lines: [{ productId, quantity, lineDiscountAmount, lineDiscountType }], discountAmount, discountType }
 
-    const product = await db.products.get(productId);
-    if (!product) throw new Error('Produit introuvable localement');
-    if (product.stockQuantity < quantity) throw new Error('Stock insuffisant');
+    // 1. Validate stock locally
+    for (const line of invoiceData.lines) {
+        const product = await db.products.get(line.productId);
+        if (!product) throw new Error(`Produit introuvable localement (ID: ${line.productId})`);
+        if (product.stockQuantity < line.quantity) {
+            throw new Error(`Stock insuffisant pour ${product.name}`);
+        }
+    }
 
-    await db.products.update(productId, {
-        stockQuantity: product.stockQuantity - quantity
-    });
+    // 2. Decrement stock locally
+    for (const line of invoiceData.lines) {
+        const product = await db.products.get(line.productId);
+        await db.products.update(line.productId, {
+            stockQuantity: product.stockQuantity - line.quantity
+        });
+    }
 
+    // 3. Save pending action
     await db.pendingActions.add({
-        type: 'REGISTER_SALE',
+        type: 'SYNC_INVOICE',
         shopId,
-        payload: { productId, quantity, clientActionId: localActionId },
+        payload: { ...invoiceData, clientActionId: localActionId },
         createdAt: new Date().toISOString(),
         synced: false
     });
 
+    // 4. Try to sync immediately if online
     if (navigator.onLine) {
-        await syncPendingActions();
+        syncPendingActions().catch(console.error);
     }
 
-    return { success: true, offline: !navigator.onLine };
+    return { success: true, offline: !navigator.onLine, localActionId };
 }
 
 export async function syncPendingActions() {
@@ -47,7 +60,7 @@ export async function syncPendingActions() {
         const { processedActionIds, conflicts } = response.data;
 
         if (!Array.isArray(processedActionIds)) {
-            console.error('[syncPendingActions] réponse de synchronisation invalide : processedActionIds manquant ou invalide', response.data);
+            console.error('[syncPendingActions] invalid response', response.data);
             return;
         }
 
@@ -56,27 +69,17 @@ export async function syncPendingActions() {
             .map((id) => (Number.isFinite(id) ? id : null))
             .filter((id) => id !== null);
 
-        if (normalizedIds.length !== processedActionIds.length) {
-            console.warn('[syncPendingActions] certains processedActionIds n\'ont pas pu être interprétés comme des nombres', processedActionIds);
-        }
-
         for (const localId of normalizedIds) {
             await db.pendingActions.update(localId, { synced: true });
         }
 
         if (conflicts && conflicts.length > 0) {
             console.error('Conflits de synchronisation détectés :', conflicts);
-            // TODO Rang 1 (suite) : afficher une alerte UI claire pour chaque conflit
+            // We can emit an event or show toast here later
         }
 
         await db.syncMeta.put({ key: 'lastSync', value: new Date().toISOString() });
     } catch (error) {
         console.error('Échec de synchronisation :', error.message);
-        if (error.response) {
-            console.error('Statut HTTP serveur :', error.response.status);
-            console.error('Détails de l\'erreur serveur :', error.response.data);
-        } else if (error.request) {
-            console.error('Aucune réponse du serveur (problème réseau ou serveur injoignable).');
-        }
     }
 }

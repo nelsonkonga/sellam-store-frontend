@@ -27,9 +27,16 @@ export default function ProductRow({ product }) {
         </div>
       )}
 
-      <p className="min-w-0 flex-1 truncate font-medium text-gray-900 dark:text-white">
-        {product.name}
-      </p>
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-medium text-gray-900 dark:text-white">
+          {product.name}
+        </p>
+        {product.brand && (
+          <p className="truncate text-[10px] text-gray-500 font-semibold uppercase tracking-wider">
+            {product.brand}
+          </p>
+        )}
+      </div>
 
       <span
         className={`flex-shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${

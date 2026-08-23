@@ -33,14 +33,60 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+function getCacheKey(config) {
+  const paramsStr = config.params ? JSON.stringify(config.params) : "";
+  return `offline_cache_${config.url}_${paramsStr}`;
+}
+
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+      if (response.config.method?.toLowerCase() === 'get' && !response.config.responseType) {
+        try {
+          const key = getCacheKey(response.config);
+          localStorage.setItem(key, JSON.stringify(response.data));
+        } catch (err) {
+          // Ignore localStorage errors (quota exceeded, etc.)
+        }
+      }
+      return response;
+    },
     (error) => {
       if (error.response?.status === 401) {
         onUnauthorized();
 
         if (window.location.pathname !== "/login") {
           window.location.href = "/login";
+        }
+        return Promise.reject(error);
+      }
+      
+      // Detect offline / network failure
+      const isNetworkError = !error.response 
+          || error.code === 'ERR_NETWORK' 
+          || error.code === 'ECONNABORTED'
+          || error.message === 'Network Error'
+          || error.message?.includes('net::ERR_INTERNET_DISCONNECTED')
+          || error.message?.includes('net::ERR_FAILED');
+      
+      if (isNetworkError) {
+        const config = error.config;
+        if (config && config.method?.toLowerCase() === 'get' && !config.responseType) {
+          try {
+            const key = getCacheKey(config);
+            const cached = localStorage.getItem(key);
+            if (cached) {
+              return Promise.resolve({
+                data: JSON.parse(cached),
+                status: 200,
+                statusText: 'OK (Cached)',
+                headers: {},
+                config: config,
+                fromCache: true
+              });
+            }
+          } catch (err) {
+            // Ignore parse errors
+          }
         }
       }
       return Promise.reject(error);

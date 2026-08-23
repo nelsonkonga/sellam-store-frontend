@@ -24,8 +24,8 @@ export async function applyInvoiceDiscount(invoiceId, discountType, discountValu
     return response.data;
 }
 
-export async function validateInvoice(invoiceId) {
-    const response = await api.post(`/invoices/${invoiceId}/validate`);
+export async function validateInvoice(invoiceId, customerName = null) {
+    const response = await api.post(`/invoices/${invoiceId}/validate`, { customerName });
     return response.data;
 }
 

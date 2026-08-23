@@ -140,6 +140,24 @@ export default function DashboardPage() {
               />
             </div>
 
+            {/* Centre de Rapports */}
+            <div className="mt-8 mb-2 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-gray-300">
+                Centre de Pilotage
+              </h2>
+            </div>
+            <button
+                type="button"
+                onClick={() => navigate("/reports")}
+                className="w-full flex items-center justify-between rounded-xl btn-gradient p-4 text-left shadow-lg hover:brightness-110 transition"
+            >
+              <div>
+                <p className="font-bold text-white">Rapports & Statistiques</p>
+                <p className="text-xs text-white/80 mt-1">Palmarès, marge, écarts de caisse</p>
+              </div>
+              <TrendingUp className="text-white" size={24} />
+            </button>
+
             {/* Liste des factures */}
             <section className="mt-8">
               <div className="mb-4 flex items-center justify-between">

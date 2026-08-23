@@ -44,9 +44,16 @@ export default function ProductTile({ product, onClick }) {
           <Package size={26} />
         </div>
       )}
-      <p className="line-clamp-2 text-center text-sm font-medium leading-tight text-white">
-        {product.name}
-      </p>
+      <div className="w-full text-center">
+        <p className="line-clamp-2 text-sm font-medium leading-tight text-white">
+          {product.name}
+        </p>
+        {product.brand && (
+          <p className="mt-0.5 truncate text-[10px] text-gray-500 font-semibold uppercase tracking-wider">
+            {product.brand}
+          </p>
+        )}
+      </div>
       <p className="text-sm font-semibold text-brand-400">
         {currencyFormatter.format(product.sellingPrice || 0)}
       </p>

@@ -1,19 +1,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Camera, X, Percent, Tag } from "lucide-react";
-import { getProducts } from "../services/productService";
-import {
-  createInvoice,
-  addInvoiceLine,
-  removeInvoiceLine,
-  applyInvoiceDiscount,
-  validateInvoice,
-  downloadInvoicePdf,
-} from "../services/invoiceService";
+import { v4 as uuidv4 } from "uuid";
+import { getProducts, getProductByBarcode } from "../services/productService";
+import BarcodeScannerModal from "../components/BarcodeScannerModal";
+import { saveInvoiceOfflineFirst } from "../services/salesOfflineService";
 import { useShop } from "../context/ShopContext";
 import SearchBar from "../components/SearchBar";
 import ProductTile from "../components/ProductTile";
 import QuantityKeypad from "../components/QuantityKeypad";
+import { recalculateCart } from "../utils/localCartHelper";
 
 const currencyFormatter = new Intl.NumberFormat("fr-FR", {
   style: "currency",
@@ -42,8 +38,9 @@ export default function NewSalePage() {
   const [discountType, setDiscountType] = useState("PERCENTAGE");
   const [discountValue, setDiscountValue] = useState("");
 
+  const [customerName, setCustomerName] = useState("");
   const [validating, setValidating] = useState(false);
-  const [showScannerPlaceholder, setShowScannerPlaceholder] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   const navigate = useNavigate();
   const { selectedShopId: shopId, selectedShop } = useShop();
@@ -56,14 +53,20 @@ export default function NewSalePage() {
 
     async function init() {
       try {
-        const [productsData, newInvoice] = await Promise.all([
-          getProducts(shopId),
-          createInvoice(shopId),
-        ]);
+        const productsData = await getProducts(shopId);
         setProducts(productsData);
-        setInvoice(newInvoice);
+        // INIT LOCAL INVOICE
+        setInvoice({
+          id: uuidv4(),
+          customerName: "",
+          lines: [],
+          subtotal: 0,
+          discountAmount: 0,
+          discountType: null,
+          totalAmount: 0
+        });
       } catch (err) {
-        setError("Impossible de démarrer la vente. Vérifiez votre connexion.");
+        setError("Impossible de charger les produits. Vérifiez votre connexion.");
       } finally {
         setLoading(false);
       }
@@ -74,6 +77,19 @@ export default function NewSalePage() {
   const filteredProducts = products.filter((p) =>
       p.name.toLowerCase().includes(search.trim().toLowerCase())
   );
+
+  async function handleKeyDown(e) {
+    if (e.key === "Enter" && search.trim()) {
+      e.preventDefault();
+      try {
+        const product = await getProductByBarcode(shopId, search.trim());
+        openKeypad(product);
+        setSearch("");
+      } catch (err) {
+        // Ignorer silencieusement si c'est juste une recherche texte
+      }
+    }
+  }
 
   function openKeypad(product) {
     setSelectedProduct(product);
@@ -90,10 +106,15 @@ export default function NewSalePage() {
     setLineDiscountValue("");
   }
 
-  async function handleAddLine() {
+  function handleAddLine() {
     const numericQuantity = parseFloat(quantity);
     if (!numericQuantity || numericQuantity <= 0) {
       setConfirmError("Entrez une quantité valide.");
+      return;
+    }
+
+    if (selectedProduct.stockQuantity < numericQuantity) {
+      setConfirmError("Stock insuffisant.");
       return;
     }
 
@@ -101,11 +122,19 @@ export default function NewSalePage() {
     setConfirmError("");
 
     try {
-      const updatedInvoice = await addInvoiceLine(
-        invoice.id, selectedProduct.id, numericQuantity,
-        lineDiscountType, parseFloat(lineDiscountValue) || null
-      );
-      setInvoice(updatedInvoice);
+      const newLine = {
+        saleId: uuidv4(),
+        productId: selectedProduct.id,
+        productName: selectedProduct.name,
+        quantity: numericQuantity,
+        product: selectedProduct, // for recalculation
+        lineDiscountType: lineDiscountType,
+        lineDiscountValue: parseFloat(lineDiscountValue) || null
+      };
+
+      const newLines = [...invoice.lines, newLine];
+      const recalculated = recalculateCart(newLines, invoice.discountType, invoice.discountValue);
+      setInvoice({ ...invoice, ...recalculated });
 
       setProducts((prev) =>
           prev.map((p) =>
@@ -114,50 +143,72 @@ export default function NewSalePage() {
                   : p
           )
       );
-
       closeKeypad();
     } catch (err) {
-      setConfirmError(err.response?.data?.message || "Impossible d'ajouter ce produit. Réessayez.");
+      setConfirmError("Erreur locale.");
     } finally {
       setConfirming(false);
     }
   }
 
-  async function handleRemoveLine(saleId) {
-    try {
-      const updatedInvoice = await removeInvoiceLine(invoice.id, saleId, false);
-      setInvoice(updatedInvoice);
-    } catch (err) {
-      setError(err.response?.data?.message || "Impossible de retirer cette ligne.");
-    }
+  function handleRemoveLine(saleId) {
+    const lineToRemove = invoice.lines.find(l => l.saleId === saleId);
+    if (!lineToRemove) return;
+
+    const newLines = invoice.lines.filter(l => l.saleId !== saleId);
+    const recalculated = recalculateCart(newLines, invoice.discountType, invoice.discountValue);
+    setInvoice({ ...invoice, ...recalculated });
+
+    // Restore stock locally
+    setProducts((prev) =>
+      prev.map((p) =>
+        p.id === lineToRemove.productId
+          ? { ...p, stockQuantity: p.stockQuantity + lineToRemove.quantity }
+          : p
+      )
+    );
   }
 
-  async function handleApplyDiscount() {
+  function handleApplyDiscount() {
     const numericValue = parseFloat(discountValue);
     if (!numericValue || numericValue <= 0) return;
 
-    try {
-      const updatedInvoice = await applyInvoiceDiscount(invoice.id, discountType, numericValue);
-      setInvoice(updatedInvoice);
-      setShowDiscountModal(false);
-      setDiscountValue("");
-    } catch (err) {
-      setError(err.response?.data?.message || "Impossible d'appliquer la remise.");
-    }
+    const recalculated = recalculateCart(invoice.lines, discountType, numericValue);
+    setInvoice({ 
+        ...invoice, 
+        ...recalculated, 
+        discountType, 
+        discountValue: numericValue 
+    });
+    setShowDiscountModal(false);
+    setDiscountValue("");
   }
 
   async function handleValidateSale() {
     setValidating(true);
     try {
-      const finalInvoice = await validateInvoice(invoice.id);
-      if (selectedShop?.autoPrintInvoices) {
-        downloadInvoicePdf(finalInvoice.id).catch(err => console.error("Erreur PDF:", err));
-      }
+      const payload = {
+        customerName: customerName.trim() ? customerName.trim() : null,
+        lines: invoice.lines.map(l => ({
+            productId: l.productId,
+            quantity: l.quantity,
+            lineDiscountAmount: l.lineDiscountValue, // In new logic, we pass value, SyncService uses discountValue
+            lineDiscountType: l.lineDiscountType
+        })),
+        discountAmount: invoice.discountValue,
+        discountType: invoice.discountType
+      };
+
+      const res = await saveInvoiceOfflineFirst(shopId, payload);
+      
       navigate("/dashboard", {
-        state: { invoiceReady: !selectedShop?.autoPrintInvoices, invoiceId: finalInvoice.id },
+        state: { 
+            invoiceReady: !selectedShop?.autoPrintInvoices && !res.offline, 
+            invoiceId: res.localActionId // We can't immediately print an offline invoice without real ID
+        },
       });
     } catch (err) {
-      setError(err.response?.data?.message || "Impossible de valider la vente.");
+      setError(err.message || "Impossible de valider la vente.");
     } finally {
       setValidating(false);
     }
@@ -172,7 +223,7 @@ export default function NewSalePage() {
   }
 
   return (
-      <div className="min-h-screen bg-section-dark text-white pb-32">
+      <div className="min-h-screen bg-section-dark text-white pb-40">
         <header className="flex items-center gap-3 px-5 pb-4 pt-6 mx-auto max-w-5xl">
           <button
               type="button"
@@ -184,7 +235,7 @@ export default function NewSalePage() {
           </button>
           <div>
             <h1 className="text-xl font-bold text-white">Nouvelle vente</h1>
-            {invoice && <p className="text-xs text-gray-400">Facture {invoice.invoiceNumber}</p>}
+            <p className="text-xs text-gray-400">Mode hors-ligne supporté</p>
           </div>
         </header>
 
@@ -247,11 +298,11 @@ export default function NewSalePage() {
 
           <div className="flex items-center gap-2">
             <div className="flex-1">
-              <SearchBar value={search} onChange={setSearch} placeholder="Rechercher un produit..." />
+              <SearchBar value={search} onChange={setSearch} onKeyDown={handleKeyDown} placeholder="Rechercher (ou scanner code-barre)..." />
             </div>
             <button
                 type="button"
-                onClick={() => setShowScannerPlaceholder(true)}
+                onClick={() => setIsScannerOpen(true)}
                 aria-label="Scanner un code-barres"
                 className="flex h-[50px] w-[50px] flex-shrink-0 items-center justify-center rounded-xl glass text-gray-400 hover:bg-white/10"
             >
@@ -271,15 +322,24 @@ export default function NewSalePage() {
         </main>
 
         {invoice && invoice.lines?.length > 0 && (
-            <div className="fixed bottom-20 left-0 right-0 px-5">
-              <button
-                  type="button"
-                  onClick={handleValidateSale}
-                  disabled={validating}
-                  className="mx-auto max-w-5xl w-full rounded-xl btn-gradient py-4 text-base font-bold shadow-lg disabled:opacity-60"
-              >
-                {validating ? "Validation..." : `Valider la vente — ${currencyFormatter.format(invoice.totalAmount)}`}
-              </button>
+            <div className="fixed bottom-0 left-0 right-0 px-5 pb-6 pt-4 bg-section-dark/95 backdrop-blur-md border-t border-white/10 z-40">
+              <div className="mx-auto max-w-5xl">
+                <input
+                  type="text"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  placeholder="Nom du client (optionnel)"
+                  className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 mb-3 text-sm text-white placeholder-gray-500 focus:border-brand-500 focus:outline-none"
+                />
+                <button
+                    type="button"
+                    onClick={handleValidateSale}
+                    disabled={validating}
+                    className="w-full rounded-xl btn-gradient py-4 text-base font-bold shadow-lg disabled:opacity-60 block"
+                >
+                  {validating ? "Validation..." : `Valider la vente — ${currencyFormatter.format(invoice.totalAmount)}`}
+                </button>
+              </div>
             </div>
         )}
 
@@ -388,18 +448,12 @@ export default function NewSalePage() {
             </div>
         )}
 
-        {showScannerPlaceholder && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowScannerPlaceholder(false)}>
-              <div onClick={(e) => e.stopPropagation()} className="w-full max-w-sm rounded-2xl glass-strong p-6 text-center shadow-xl">
-                <Camera className="mx-auto mb-3 text-gray-400" size={40} />
-                <p className="font-semibold text-white">Scanner un code-barres</p>
-                <p className="mt-1 text-sm text-gray-300">Fonctionnalité à venir</p>
-                <button type="button" onClick={() => setShowScannerPlaceholder(false)} className="mt-4 w-full rounded-xl bg-white/10 py-3 text-sm font-medium hover:bg-white/20">
-                  Fermer
-                </button>
-              </div>
-            </div>
-        )}
+        <BarcodeScannerModal
+            isOpen={isScannerOpen}
+            onClose={() => setIsScannerOpen(false)}
+            shopId={shopId}
+            onProductFound={openKeypad}
+        />
       </div>
   );
 }

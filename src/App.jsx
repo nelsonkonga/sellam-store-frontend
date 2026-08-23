@@ -26,6 +26,7 @@ import EmployeesPage from "./pages/EmployeesPage.jsx";
 import ShopSettingsPage from "./pages/ShopSettingsPage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
 import ChatPage from "./pages/ChatPage.jsx";
+import ReportsPage from "./pages/ReportsPage.jsx";
 
 export default function App() {
     useAutoSync();
@@ -145,6 +146,14 @@ export default function App() {
                                     element={
                                         <ProtectedRoute>
                                             <ChatPage/>
+                                        </ProtectedRoute>
+                                    }
+                                />
+                                <Route
+                                    path="/reports"
+                                    element={
+                                        <ProtectedRoute>
+                                            <ReportsPage/>
                                         </ProtectedRoute>
                                     }
                                 />

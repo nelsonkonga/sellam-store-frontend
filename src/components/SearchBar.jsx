@@ -3,7 +3,7 @@ import { Search } from "lucide-react";
 /**
  * Barre de recherche générique réutilisable (filtre côté client, contrôlé par le parent).
  */
-export default function SearchBar({ value, onChange, placeholder = "Rechercher..." }) {
+export default function SearchBar({ value, onChange, onKeyDown, placeholder = "Rechercher..." }) {
   return (
     <div className="relative">
       <Search
@@ -14,6 +14,7 @@ export default function SearchBar({ value, onChange, placeholder = "Rechercher..
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onKeyDown={onKeyDown}
         placeholder={placeholder}
         className="w-full rounded-xl border border-gray-300 bg-white py-3 pl-10 pr-4
                    text-base text-gray-900 placeholder-gray-400 shadow-sm outline-none

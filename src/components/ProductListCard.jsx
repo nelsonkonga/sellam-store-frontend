@@ -38,8 +38,13 @@ export default function ProductListCard({ product, onClick }) {
       )}
 
       <div className="min-w-0 flex-1">
-        <p className="truncate font-semibold text-white">
+        <p className="truncate font-semibold text-white flex items-center gap-2">
           {product.name}
+          {product.brand && (
+            <span className="px-1.5 py-0.5 rounded-md bg-white/10 text-[10px] uppercase tracking-wider text-gray-300">
+              {product.brand}
+            </span>
+          )}
         </p>
         <p className="text-sm text-brand-400">
           {currencyFormatter.format(product.sellingPrice || 0)}

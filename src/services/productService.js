@@ -31,6 +31,16 @@ export async function getProductById(id) {
   return response.data;
 }
 
+export async function listTopSellingProducts(shopId) {
+  const response = await api.get("/products/top-selling", { params: { shopId } });
+  return response.data;
+}
+
+export async function getProductByBarcode(shopId, barcode) {
+  const response = await api.get(`/products/barcode/${barcode}`, { params: { shopId } });
+  return response.data;
+}
+
 /**
  * Crée un nouveau produit.
  * @param {object} data - { shopId, name, barcode, saleTypeEnum, purchasePrice, sellingPrice, stockQuantity, alertThreshold, category, pictureUrl }
