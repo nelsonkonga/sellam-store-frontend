@@ -5,10 +5,8 @@ import {
   saveBalanceSetting,
 } from "../services/balanceSettingsService";
 import { useShop } from "../context/ShopContext";
-import DaySettingRow from "../components/DaySettingRow";
 import BottomNav from "../components/BottomNav";
 
-// Jours de la semaine dans l'ordre d'affichage, avec la clé attendue par l'API
 const DAYS = [
   { key: "MONDAY", label: "Lundi" },
   { key: "TUESDAY", label: "Mardi" },
@@ -19,7 +17,6 @@ const DAYS = [
   { key: "SUNDAY", label: "Dimanche" },
 ];
 
-// Valeurs par défaut raisonnables tant qu'un jour n'a pas encore de réglage
 const DEFAULT_SETTING = {
   balanceTime: "18:00",
   reminderFrequencyHours: 3,
@@ -29,18 +26,13 @@ const DEFAULT_SETTING = {
 };
 
 export default function BalanceSettingsPage() {
-  // État indexé par jour : { MONDAY: { balanceTime, reminderFrequencyHours }, ... }
   const [settings, setSettings] = useState(() =>
     Object.fromEntries(DAYS.map((d) => [d.key, { ...DEFAULT_SETTING }]))
   );
-  // Copie de référence pour détecter les lignes modifiées (comparaison isDirty)
   const [savedSettings, setSavedSettings] = useState(settings);
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  // État de sauvegarde par jour, pour un retour visuel précis ligne par ligne
-  const [savingDays, setSavingDays] = useState({}); // { MONDAY: true, ... }
+  const [savingDays, setSavingDays] = useState({});
   const [justSavedDays, setJustSavedDays] = useState({});
   const [saveAllError, setSaveAllError] = useState("");
   const [savingAll, setSavingAll] = useState(false);
@@ -48,8 +40,6 @@ export default function BalanceSettingsPage() {
   const navigate = useNavigate();
   const { selectedShopId: shopId } = useShop();
 
-  // Charge les réglages existants, complète avec les valeurs par défaut pour
-  // les jours qui n'ont pas encore été configurés côté backend
   useEffect(() => {
     async function fetchSettings() {
       try {
@@ -59,173 +49,178 @@ export default function BalanceSettingsPage() {
             const existing = data.find((s) => s.dayOfWeek === d.key);
             return [
               d.key,
-              existing
-                ? {
-                    balanceTime: existing.balanceTime,
-                    reminderFrequencyHours: existing.reminderFrequencyHours,
-                    enabled: existing.enabled !== false,
-                    openingTime: existing.openingTime || DEFAULT_SETTING.openingTime,
-                    closingTime: existing.closingTime || DEFAULT_SETTING.closingTime,
-                  }
-                : { ...DEFAULT_SETTING },
+              existing ? { ...DEFAULT_SETTING, ...existing } : { ...DEFAULT_SETTING }
             ];
           })
         );
         setSettings(merged);
         setSavedSettings(merged);
       } catch (err) {
-        setError("Impossible de charger les réglages. Les valeurs par défaut sont affichées.");
+        setError("Impossible de charger les paramètres.");
       } finally {
         setLoading(false);
       }
     }
     fetchSettings();
-  }, [shopId, navigate]);
+  }, [shopId]);
 
-  function updateDay(dayKey, patch) {
+  const handleDayChange = (dayKey, field, value) => {
     setSettings((prev) => ({
       ...prev,
-      [dayKey]: { ...prev[dayKey], ...patch },
+      [dayKey]: { ...prev[dayKey], [field]: value }
     }));
-    // Une modification invalide l'indicateur "Enregistré" précédent pour ce jour
-    setJustSavedDays((prev) => ({ ...prev, [dayKey]: false }));
-  }
+  };
 
-  // Un jour est "modifié" si ses valeurs actuelles diffèrent de la dernière version sauvegardée
-  function isDayDirty(dayKey) {
-    const current = settings[dayKey];
-    const saved = savedSettings[dayKey];
-    return (
-      current.balanceTime !== saved.balanceTime ||
-      current.openingTime !== saved.openingTime ||
-      current.closingTime !== saved.closingTime ||
-      Number(current.reminderFrequencyHours) !== Number(saved.reminderFrequencyHours) ||
-      current.enabled !== saved.enabled
-    );
-  }
-
-  // Sauvegarde un seul jour auprès de l'API, avec son propre indicateur de chargement
-  async function saveDay(dayKey) {
+  const handleSaveDay = async (dayKey) => {
     setSavingDays((prev) => ({ ...prev, [dayKey]: true }));
     try {
-      await saveBalanceSetting(shopId, {
-        dayOfWeek: dayKey,
-        balanceTime: settings[dayKey].balanceTime,
-        reminderFrequencyHours: Number(settings[dayKey].reminderFrequencyHours),
-        enabled: settings[dayKey].enabled,
-        openingTime: settings[dayKey].openingTime,
-        closingTime: settings[dayKey].closingTime,
-      });
+      await saveBalanceSetting(shopId, dayKey, settings[dayKey]);
       setSavedSettings((prev) => ({ ...prev, [dayKey]: settings[dayKey] }));
       setJustSavedDays((prev) => ({ ...prev, [dayKey]: true }));
-      // Fait disparaître la coche "Enregistré" après quelques secondes
-      setTimeout(() => {
-        setJustSavedDays((prev) => ({ ...prev, [dayKey]: false }));
-      }, 2500);
+      setTimeout(() => setJustSavedDays((prev) => ({ ...prev, [dayKey]: false })), 2000);
+    } catch (err) {
+      setError(`Erreur pour ${DAYS.find((d) => d.key === dayKey).label}`);
     } finally {
       setSavingDays((prev) => ({ ...prev, [dayKey]: false }));
     }
-  }
+  };
 
-  // Enregistre uniquement les jours modifiés, une requête par jour (comme demandé)
-  async function handleSaveAll() {
-    const dirtyDays = DAYS.map((d) => d.key).filter(isDayDirty);
-
-    if (dirtyDays.length === 0) return;
-
+  const handleSaveAll = async () => {
     setSavingAll(true);
     setSaveAllError("");
-
     try {
-      // Envoyées en parallèle : chaque jour est indépendant côté backend
-      await Promise.all(dirtyDays.map((dayKey) => saveDay(dayKey)));
-    } catch (err) {
-      setSaveAllError(
-        "Certains jours n'ont pas pu être enregistrés. Vérifiez votre connexion et réessayez."
+      await Promise.all(
+        DAYS.map((d) => saveBalanceSetting(shopId, d.key, settings[d.key]))
       );
+      setSavedSettings(settings);
+      setJustSavedDays(
+        Object.fromEntries(DAYS.map((d) => [d.key, true]))
+      );
+      setTimeout(() => setJustSavedDays({}), 2000);
+    } catch (err) {
+      setSaveAllError("Erreur lors de la sauvegarde de tous les jours.");
     } finally {
       setSavingAll(false);
     }
-  }
+  };
 
-  const hasUnsavedChanges = DAYS.some((d) => isDayDirty(d.key));
+  const hasChanges = DAYS.some((d) => JSON.stringify(settings[d.key]) !== JSON.stringify(savedSettings[d.key]));
 
   return (
-    <div className="min-h-screen bg-section-alt pb-32 text-white">
-      <header className="px-5 pb-4 pt-6 mx-auto max-w-5xl">
-        <h1 className="text-2xl font-bold text-white">
-          Réglages du bilan
-        </h1>
-        <p className="mt-1 text-sm text-gray-300">
-          Choisis l'heure du bilan et la fréquence des rappels pour chaque jour
-        </p>
-      </header>
+    <div className="min-h-screen bg-[#f1fcf5] pb-24 text-[#141e1a]">
+      <div className="mx-auto max-w-7xl px-5 py-2 md:px-8 lg:px-10">
+        <div className="flex items-center gap-3 mb-6">
+          <button onClick={() => navigate("/dashboard")} className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#bdc9c1] bg-white text-[#3e4943] hover:bg-[#ebf6ef]">
+            <span className="text-xl">arrow_back</span>
+          </button>
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#006547]">Trésorerie</p>
+            <h1 className="font-display text-3xl font-bold">Réglages du Bilan</h1>
+            <p className="text-sm text-[#6e7a72]">Configurez les horaires et rappels de déclaration.</p>
+          </div>
+        </div>
 
-      <main className="flex flex-col gap-3 px-5 mx-auto max-w-5xl">
-        {loading && (
-          <p className="mt-10 text-center text-sm text-gray-400 dark:text-gray-500">
-            Chargement des réglages...
-          </p>
-        )}
-
-        {!loading && error && (
-          <div
-            role="alert"
-            className="rounded-lg bg-orange-50 px-4 py-3 text-sm font-medium text-orange-600
-                       dark:bg-orange-950/50 dark:text-orange-400"
-          >
+        {error && (
+          <div className="rounded-lg border border-[#ffdad6] bg-[#ffdad6] p-4 text-sm text-[#93000a] mb-6">
             {error}
           </div>
         )}
 
-        {!loading &&
-          DAYS.map((day) => (
-            <DaySettingRow
-              key={day.key}
-              label={day.label}
-              balanceTime={settings[day.key].balanceTime}
-              reminderFrequencyHours={settings[day.key].reminderFrequencyHours}
-              enabled={settings[day.key].enabled}
-              openingTime={settings[day.key].openingTime}
-              closingTime={settings[day.key].closingTime}
-              onChangeTime={(value) => updateDay(day.key, { balanceTime: value })}
-              onChangeFrequency={(value) =>
-                updateDay(day.key, { reminderFrequencyHours: value })
-              }
-              onToggleEnabled={(value) => updateDay(day.key, { enabled: value })}
-              onChangeOpeningTime={(value) => updateDay(day.key, { openingTime: value })}
-              onChangeClosingTime={(value) => updateDay(day.key, { closingTime: value })}
-              isDirty={isDayDirty(day.key)}
-              isSaving={!!savingDays[day.key]}
-              justSaved={!!justSavedDays[day.key]}
-            />
-          ))}
-      </main>
+        {loading ? (
+          <p className="text-center text-sm text-[#6e7a72] py-10">Chargement des paramètres...</p>
+        ) : (
+          <>
+            <div className="mb-6 flex justify-end gap-2">
+              <button
+                onClick={handleSaveAll}
+                disabled={savingAll || !hasChanges}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold ${
+                  savingAll || !hasChanges
+                    ? "bg-[#bdc9c1] text-[#6e7a72] cursor-not-allowed"
+                    : "bg-[#006547] text-white hover:bg-[#12805c]"
+                }`}
+              >
+                {savingAll ? "Sauvegarde..." : "Tout sauvegarder"}
+              </button>
+            </div>
 
-      {/* Bouton global fixé en bas, au-dessus de la BottomNav */}
-      {!loading && (
-        <div className="fixed bottom-16 left-0 right-0 border-t border-white/10 glass-strong p-4">
-          {saveAllError && (
-            <p className="mb-2 text-center text-sm font-medium text-red-500">
-              {saveAllError}
-            </p>
-          )}
-          <button
-            type="button"
-            onClick={handleSaveAll}
-            disabled={savingAll || !hasUnsavedChanges}
-            className="w-full max-w-5xl mx-auto block rounded-xl btn-gradient py-3.5 text-base font-semibold
-                       text-white shadow-md transition
-                       disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {savingAll
-              ? "Enregistrement en cours..."
-              : hasUnsavedChanges
-              ? "Enregistrer tout"
-              : "Tout est à jour"}
-          </button>
-        </div>
-      )}
+            {saveAllError && (
+              <div className="rounded-lg border border-[#ffdad6] bg-[#ffdad6] p-4 text-sm text-[#93000a] mb-6">
+                {saveAllError}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {DAYS.map((day) => (
+                <div key={day.key} className="bg-white border border-[#bdc9c1] rounded-xl p-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-semibold text-[#141e1a]">{day.label}</h3>
+                    <button
+                      onClick={() => handleSaveDay(day.key)}
+                      disabled={savingDays[day.key]}
+                      className={`text-xs font-semibold px-3 py-1 rounded-lg ${
+                        savingDays[day.key]
+                          ? "bg-[#bdc9c1] text-[#6e7a72] cursor-not-allowed"
+                          : justSavedDays[day.key]
+                          ? "bg-[#ddffea] text-[#005138]"
+                          : "bg-[#ebf6ef] text-[#3e4943] hover:bg-[#dae5de]"
+                      }`}
+                    >
+                      {justSavedDays[day.key] ? "Sauvegardé" : savingDays[day.key] ? "..." : "Sauvegarder"}
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs text-[#3e4943] mb-1 block">Heure de bilan</label>
+                      <input
+                        type="time"
+                        value={settings[day.key].balanceTime}
+                        onChange={(e) => handleDayChange(day.key, "balanceTime", e.target.value)}
+                        className="w-full border border-[#bdc9c1] rounded-lg p-2 text-sm text-[#141e1a] focus:border-[#006547] focus:ring-1 focus:ring-[#006547] outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-[#3e4943] mb-1 block">Heure d'ouverture</label>
+                      <input
+                        type="time"
+                        value={settings[day.key].openingTime}
+                        onChange={(e) => handleDayChange(day.key, "openingTime", e.target.value)}
+                        className="w-full border border-[#bdc9c1] rounded-lg p-2 text-sm text-[#141e1a] focus:border-[#006547] focus:ring-1 focus:ring-[#006547] outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-[#3e4943] mb-1 block">Heure de fermeture</label>
+                      <input
+                        type="time"
+                        value={settings[day.key].closingTime}
+                        onChange={(e) => handleDayChange(day.key, "closingTime", e.target.value)}
+                        className="w-full border border-[#bdc9c1] rounded-lg p-2 text-sm text-[#141e1a] focus:border-[#006547] focus:ring-1 focus:ring-[#006547] outline-none"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs text-[#3e4943]">Activer le bilan</label>
+                      <button
+                        onClick={() => handleDayChange(day.key, "enabled", !settings[day.key].enabled)}
+                        className={`w-12 h-6 rounded-full transition-colors ${
+                          settings[day.key].enabled ? "bg-[#006547]" : "bg-[#bdc9c1]"
+                        }`}
+                      >
+                        <span className={`block w-5 h-5 rounded-full bg-white transition-transform ${
+                          settings[day.key].enabled ? "translate-x-6" : "translate-x-1"
+                        }`} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
 
       <BottomNav />
     </div>

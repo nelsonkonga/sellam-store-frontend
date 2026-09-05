@@ -1,25 +1,21 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams, Link } from "react-router-dom";
-import { AlertCircle, CheckCircle2, Eye, EyeOff } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { AlertCircle, ArrowRight, CheckCircle2, Eye, EyeOff } from "lucide-react";
 import { forgotPassword, resetPassword } from "../services/authService";
-import PhoneNumberInput from "../components/PhoneNumberInput";
+
+const PROGRESS_STEPS = [1, 2, 3, 4];
 
 export default function ForgotPasswordPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const tokenFromUrl = searchParams.get("token");
 
-  // Étapes : "phone" | "sent" | "reset" | "success"
   const [step, setStep] = useState(tokenFromUrl ? "reset" : "phone");
-
-  // Étape 1 : Entrer le numéro
   const [phoneNumber, setPhoneNumber] = useState("");
   const [phoneError, setPhoneError] = useState("");
-
-  // Étape 2 : Confirmation
   const [sentMessage, setSentMessage] = useState("");
-
-  // Étape 3 : Réinitialiser le mot de passe
+  const [verificationCode, setVerificationCode] = useState(Array(6).fill(""));
+  const [codeError, setCodeError] = useState("");
   const [resetToken, setResetToken] = useState(tokenFromUrl || "");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -27,8 +23,6 @@ export default function ForgotPasswordPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [resetError, setResetError] = useState("");
   const [passwordError, setPasswordError] = useState("");
-
-  // Loading states
   const [sendingEmail, setSendingEmail] = useState(false);
   const [resettingPassword, setResettingPassword] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
@@ -40,12 +34,25 @@ export default function ForgotPasswordPage() {
     }
   }, [tokenFromUrl]);
 
-  // Étape 1 : Demander la réinitialisation
+  useEffect(() => {
+    const tokenValue = verificationCode.join("").trim();
+    if (tokenValue.length === 6) {
+      setResetToken(tokenValue);
+    }
+  }, [verificationCode]);
+
+  function updateCode(index, value) {
+    if (!/\d|[A-Za-z]/.test(value) && value !== "") return;
+    const next = [...verificationCode];
+    next[index] = value.slice(-1).toUpperCase();
+    setVerificationCode(next);
+    setCodeError("");
+  }
+
   async function handleRequestReset() {
     setPhoneError("");
     setSentMessage("");
 
-    // Validation
     if (!phoneNumber || phoneNumber.trim().length < 10) {
       setPhoneError("Entrez un numéro de téléphone valide");
       return;
@@ -55,7 +62,7 @@ export default function ForgotPasswordPage() {
     try {
       await forgotPassword({ phoneNumber });
       setSentMessage("Un lien de réinitialisation a été envoyé à votre email associé au compte.");
-      setStep("sent");
+      setStep("code");
       setPhoneNumber("");
     } catch (err) {
       setPhoneError(
@@ -68,12 +75,21 @@ export default function ForgotPasswordPage() {
     }
   }
 
-  // Étape 3 : Réinitialiser le mot de passe
+  function handleVerifyCode() {
+    const code = verificationCode.join("").trim();
+    if (!code || code.length < 6) {
+      setCodeError("Veuillez saisir le code de vérification complet.");
+      return;
+    }
+
+    setResetToken(code);
+    setStep("reset");
+  }
+
   async function handleResetPassword() {
     setResetError("");
     setPasswordError("");
 
-    // Validation
     if (!resetToken || resetToken.trim().length === 0) {
       setResetError("Le lien de réinitialisation est manquant ou invalide");
       return;
@@ -91,18 +107,10 @@ export default function ForgotPasswordPage() {
 
     setResettingPassword(true);
     try {
-      const result = await resetPassword({
-        resetToken,
-        newPassword,
-      });
-
+      const result = await resetPassword({ resetToken, newPassword });
       setSuccessMessage(result.message || "Votre mot de passe a été réinitialisé avec succès.");
       setStep("success");
-
-      // Redirection après 2 secondes
-      setTimeout(() => {
-        navigate("/login");
-      }, 2000);
+      setTimeout(() => navigate("/login"), 2000);
     } catch (err) {
       setResetError(
         err.response?.data?.message ||
@@ -114,274 +122,225 @@ export default function ForgotPasswordPage() {
     }
   }
 
+  const progressWidth = step === "phone" ? "0%" : step === "code" ? "33%" : step === "reset" ? "66%" : "100%";
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-900 via-gray-900 to-black px-4">
-      <div className="w-full max-w-md rounded-2xl glass p-8 shadow-2xl">
-        {/* En-tête */}
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-white">
-            {step === "phone" && "Réinitialiser votre mot de passe"}
-            {step === "sent" && "Email envoyé"}
-            {step === "reset" && "Créer un nouveau mot de passe"}
-            {step === "success" && "Succès!"}
-          </h1>
-          <p className="mt-2 text-sm text-gray-400">
-            {step === "phone" && "Entrez votre numéro de téléphone"}
-            {step === "sent" && "Vérifiez votre email"}
-            {step === "reset" && "Entrez votre nouveau mot de passe"}
-            {step === "success" && "Redirection vers la connexion..."}
-          </p>
-        </div>
-
-        {/* ÉTAPE 1 : PHONE */}
-        {step === "phone" && (
-          <div className="space-y-4">
-            <PhoneNumberInput
-              label="Numéro de téléphone"
-              value={phoneNumber}
-              onChange={(e164) => {
-                setPhoneNumber(e164);
-                setPhoneError("");
-              }}
-              placeholder="690000000"
-              error={!!phoneError}
-            />
-            {phoneError && (
-              <div className="mt-2 flex items-start gap-2 rounded-lg bg-red-950/20 border border-red-500/20 p-3">
-                <AlertCircle size={16} className="flex-shrink-0 text-red-400 mt-0.5" />
-                <p className="text-sm text-red-300">{phoneError}</p>
-              </div>
-            )}
-
-            <button
-              type="button"
-              onClick={handleRequestReset}
-              disabled={sendingEmail || !phoneNumber.trim()}
-              className="w-full rounded-xl bg-brand-500 py-3.5 text-base font-semibold
-                       text-white transition hover:bg-brand-600 disabled:cursor-not-allowed
-                       disabled:opacity-50"
-            >
-              {sendingEmail ? "Envoi en cours..." : "Envoyer le lien"}
-            </button>
-
-            <div className="text-center">
-              <p className="text-sm text-gray-400">
-                Vous vous souvenez de votre mot de passe?{" "}
-                <Link to="/login" className="text-brand-400 hover:underline">
-                  Se connecter
-                </Link>
-              </p>
-            </div>
+    <main className="flex min-h-screen flex-col bg-[#f1fcf5] p-4 text-[#141e1a] md:p-8">
+      <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col justify-center">
+        <div className="mx-auto w-full max-w-md overflow-hidden rounded-xl border border-[#bdc9c1] bg-white p-6 shadow-[0_2px_4px_rgba(0,33,20,0.04)] md:p-8">
+          <div className="mb-6 text-center">
+            <h1 className="text-2xl font-semibold text-[#141e1a] md:text-[2rem]">Réinitialisation du mot de passe</h1>
+            <p className="mt-2 text-sm text-[#3e4943]">Commerce vivant, contrôle calme.</p>
           </div>
-        )}
 
-        {/* ÉTAPE 2 : SENT CONFIRMATION */}
-        {step === "sent" && (
-          <div className="space-y-4">
-            <div className="flex justify-center mb-6">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-500/10">
-                <CheckCircle2 size={32} className="text-green-400" />
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-green-500/20 bg-green-950/20 p-4">
-              <p className="text-sm text-green-300 text-center">
-                {sentMessage}
-              </p>
-            </div>
-
-            <div className="space-y-3 text-sm text-gray-400">
-              <p>
-                <strong>Conseil:</strong> Le lien expire dans 1 heure. Si vous ne l'avez pas reçu, vérifiez votre dossier Spam.
-              </p>
-              <p>
-                Vous pouvez coller le code du lien ci-dessous pour continuer immédiatement:
-              </p>
-            </div>
-
-            <div>
-              <label htmlFor="token" className="block text-sm font-medium text-gray-300 mb-2">
-                Code du lien (optionnel)
-              </label>
-              <input
-                id="token"
-                type="text"
-                value={resetToken}
-                onChange={(e) => {
-                  setResetToken(e.target.value);
-                  setResetError("");
-                }}
-                placeholder="Collez le code du lien"
-                className="w-full rounded-xl border border-white/10 glass-strong px-4 py-3
-                         text-base text-white placeholder:text-gray-500
-                         focus:border-brand-400 focus:outline-none focus:ring-2
-                         focus:ring-brand-400/20"
+          <div className="relative mb-6 flex items-center justify-between">
+            <div className="absolute left-0 top-1/2 h-px w-full -translate-y-1/2 bg-[#bdc9c1]" />
+            <div className="absolute left-0 top-1/2 h-px -translate-y-1/2 bg-[#006547] transition-all duration-300" style={{ width: progressWidth }} />
+            {PROGRESS_STEPS.map((value) => (
+              <span
+                key={value}
+                className={`relative z-10 flex h-5 w-5 items-center justify-center rounded-full border-4 border-white ${
+                  value <= (step === "phone" ? 1 : step === "code" ? 2 : step === "reset" ? 3 : 4)
+                    ? "bg-[#006547]"
+                    : "bg-[#dae5de]"
+                }`}
               />
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setStep("reset")}
-              disabled={!resetToken.trim()}
-              className="w-full rounded-xl bg-brand-500 py-3.5 text-base font-semibold
-                       text-white transition hover:bg-brand-600 disabled:cursor-not-allowed
-                       disabled:opacity-50"
-            >
-              Continuer
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setStep("phone");
-                setSentMessage("");
-              }}
-              className="w-full rounded-xl border border-white/10 bg-white/5 py-3.5
-                       text-base font-semibold text-white transition hover:bg-white/10"
-            >
-              Retour
-            </button>
+            ))}
           </div>
-        )}
 
-        {/* ÉTAPE 3 : RESET PASSWORD */}
-        {step === "reset" && (
-          <div className="space-y-4">
-            {resetError && (
-              <div className="flex items-start gap-2 rounded-lg bg-red-950/20 border border-red-500/20 p-3">
-                <AlertCircle size={16} className="flex-shrink-0 text-red-400 mt-0.5" />
-                <p className="text-sm text-red-300">{resetError}</p>
+          {step === "phone" && (
+            <div className="space-y-5">
+              <div>
+                <h2 className="mb-2 text-xl font-semibold text-[#141e1a]">Identifiez votre compte</h2>
+                <p className="text-sm leading-6 text-[#3e4943]">Entrez l'adresse email ou le numéro de téléphone associé à votre compte Sellam.</p>
               </div>
-            )}
 
-            <div>
-              <label htmlFor="newPassword" className="block text-sm font-medium text-gray-300 mb-2">
-                Nouveau mot de passe
-              </label>
-              <div className="relative">
+              <div className="space-y-1.5">
+                <label htmlFor="accountId" className="text-sm font-medium text-[#3e4943]">Email ou Téléphone</label>
                 <input
-                  id="newPassword"
-                  type={showPassword ? "text" : "password"}
-                  value={newPassword}
+                  id="accountId"
+                  type="text"
+                  value={phoneNumber}
                   onChange={(e) => {
-                    setNewPassword(e.target.value);
-                    setPasswordError("");
+                    setPhoneNumber(e.target.value);
+                    setPhoneError("");
                   }}
-                  placeholder="Au minimum 6 caractères"
-                  disabled={resettingPassword}
-                  className="w-full rounded-xl border border-white/10 glass-strong px-4 py-3 pr-12
-                           text-base text-white placeholder:text-gray-500
-                           focus:border-brand-400 focus:outline-none focus:ring-2
-                           focus:ring-brand-400/20 disabled:opacity-50"
+                  placeholder="nom@entreprise.com"
+                  className="h-11 w-full rounded-lg border border-[#bdc9c1] bg-white px-3 text-base text-[#141e1a] outline-none placeholder:text-[#6e7a72] focus:border-[#006547] focus:ring-1 focus:ring-[#006547]"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  disabled={resettingPassword}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
               </div>
-            </div>
 
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-2">
-                Confirmez le mot de passe
-              </label>
-              <div className="relative">
-                <input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={confirmPassword}
-                  onChange={(e) => {
-                    setConfirmPassword(e.target.value);
-                    setPasswordError("");
-                  }}
-                  placeholder="Même mot de passe"
-                  disabled={resettingPassword}
-                  className="w-full rounded-xl border border-white/10 glass-strong px-4 py-3 pr-12
-                           text-base text-white placeholder:text-gray-500
-                           focus:border-brand-400 focus:outline-none focus:ring-2
-                           focus:ring-brand-400/20 disabled:opacity-50"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  disabled={resettingPassword}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
-                >
-                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-              {passwordError && (
-                <div className="mt-2 flex items-start gap-2 rounded-lg bg-red-950/20 border border-red-500/20 p-3">
-                  <AlertCircle size={16} className="flex-shrink-0 text-red-400 mt-0.5" />
-                  <p className="text-sm text-red-300">{passwordError}</p>
+              {phoneError && (
+                <div className="flex items-start gap-2 rounded-lg border border-[#e9aaa2] bg-[#fff0ee] p-3 text-sm text-[#93000a]">
+                  <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                  <span>{phoneError}</span>
                 </div>
               )}
-            </div>
 
-            <button
-              type="button"
-              onClick={handleResetPassword}
-              disabled={resettingPassword || !newPassword || !confirmPassword}
-              className="w-full rounded-xl bg-brand-500 py-3.5 text-base font-semibold
-                       text-white transition hover:bg-brand-600 disabled:cursor-not-allowed
-                       disabled:opacity-50"
-            >
-              {resettingPassword ? "Réinitialisation en cours..." : "Réinitialiser le mot de passe"}
-            </button>
+              <button
+                type="button"
+                onClick={handleRequestReset}
+                disabled={sendingEmail || !phoneNumber.trim()}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#12805c] text-base font-bold text-white transition hover:bg-[#006547] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {sendingEmail ? "Envoi en cours..." : "Continuer"}
+                <ArrowRight size={18} />
+              </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                setStep("sent");
-                setResetToken("");
-                setNewPassword("");
-                setConfirmPassword("");
-                setResetError("");
-              }}
-              disabled={resettingPassword}
-              className="w-full rounded-xl border border-white/10 bg-white/5 py-3.5
-                       text-base font-semibold text-white transition hover:bg-white/10
-                       disabled:opacity-50"
-            >
-              Retour
-            </button>
-          </div>
-        )}
-
-        {/* ÉTAPE 4 : SUCCESS */}
-        {step === "success" && (
-          <div className="space-y-4 text-center">
-            <div className="flex justify-center mb-6">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-500/10">
-                <CheckCircle2 size={32} className="text-green-400" />
+              <div className="text-center">
+                <Link to="/login" className="text-sm font-medium text-[#006547] hover:underline">Retour à la connexion</Link>
               </div>
             </div>
+          )}
 
-            <div className="rounded-xl border border-green-500/20 bg-green-950/20 p-4">
-              <p className="text-sm text-green-300">
-                {successMessage}
-              </p>
+          {step === "code" && (
+            <div className="space-y-5">
+              <div>
+                <h2 className="mb-2 text-xl font-semibold text-[#141e1a]">Code de vérification</h2>
+                <p className="text-sm leading-6 text-[#3e4943]">Nous avons envoyé un code à 6 chiffres. Veuillez l'entrer ci-dessous.</p>
+              </div>
+
+              <div className="flex justify-between gap-2">
+                {verificationCode.map((digit, index) => (
+                  <input
+                    key={index}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => updateCode(index, e.target.value)}
+                    className="h-14 w-12 rounded-lg border border-[#bdc9c1] bg-[#f1fcf5] text-center text-lg font-semibold text-[#141e1a] outline-none focus:border-[#006547] focus:ring-1 focus:ring-[#006547]"
+                  />
+                ))}
+              </div>
+
+              {codeError && (
+                <div className="flex items-start gap-2 rounded-lg border border-[#e9aaa2] bg-[#fff0ee] p-3 text-sm text-[#93000a]">
+                  <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                  <span>{codeError}</span>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleVerifyCode}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#12805c] text-base font-bold text-white transition hover:bg-[#006547]"
+              >
+                Vérifier
+              </button>
+
+              <div className="text-center text-sm text-[#3e4943]">
+                Renvoyer le code dans <span className="font-semibold text-[#006547]">00:59</span>
+              </div>
             </div>
+          )}
 
-            <p className="text-sm text-gray-400">
-              Redirection vers la connexion...
-            </p>
+          {step === "reset" && (
+            <div className="space-y-5">
+              <div>
+                <h2 className="mb-2 text-xl font-semibold text-[#141e1a]">Nouveau mot de passe</h2>
+                <p className="text-sm leading-6 text-[#3e4943]">Créez un nouveau mot de passe fort pour votre compte.</p>
+              </div>
 
-            <button
-              type="button"
-              onClick={() => navigate("/login")}
-              className="w-full rounded-xl bg-brand-500 py-3.5 text-base font-semibold
-                       text-white transition hover:bg-brand-600"
-            >
-              Aller à la connexion
-            </button>
+              {resetError && (
+                <div className="flex items-start gap-2 rounded-lg border border-[#e9aaa2] bg-[#fff0ee] p-3 text-sm text-[#93000a]">
+                  <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                  <span>{resetError}</span>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label htmlFor="newPassword" className="text-sm font-medium text-[#3e4943]">Nouveau mot de passe</label>
+                <div className="relative">
+                  <input
+                    id="newPassword"
+                    type={showPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => {
+                      setNewPassword(e.target.value);
+                      setPasswordError("");
+                    }}
+                    placeholder="Au minimum 6 caractères"
+                    className="h-11 w-full rounded-lg border border-[#bdc9c1] bg-white px-3 pr-11 text-base text-[#141e1a] outline-none placeholder:text-[#6e7a72] focus:border-[#006547] focus:ring-1 focus:ring-[#006547]"
+                  />
+                  <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6e7a72] hover:text-[#006547]">
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="confirmPassword" className="text-sm font-medium text-[#3e4943]">Confirmer le mot de passe</label>
+                <div className="relative">
+                  <input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value);
+                      setPasswordError("");
+                    }}
+                    placeholder="Même mot de passe"
+                    className="h-11 w-full rounded-lg border border-[#bdc9c1] bg-white px-3 pr-11 text-base text-[#141e1a] outline-none placeholder:text-[#6e7a72] focus:border-[#006547] focus:ring-1 focus:ring-[#006547]"
+                  />
+                  <button type="button" onClick={() => setShowConfirmPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6e7a72] hover:text-[#006547]">
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              {passwordError && (
+                <div className="flex items-start gap-2 rounded-lg border border-[#e9aaa2] bg-[#fff0ee] p-3 text-sm text-[#93000a]">
+                  <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                  <span>{passwordError}</span>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleResetPassword}
+                disabled={resettingPassword || !newPassword || !confirmPassword}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#12805c] text-base font-bold text-white transition hover:bg-[#006547] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {resettingPassword ? "Réinitialisation en cours..." : "Mettre à jour"}
+              </button>
+            </div>
+          )}
+
+          {step === "success" && (
+            <div className="space-y-5 text-center">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#DDF4EA]">
+                <CheckCircle2 size={32} className="text-[#006547]" />
+              </div>
+
+              <div>
+                <h2 className="mb-2 text-xl font-semibold text-[#141e1a]">Accès restauré</h2>
+                <p className="text-sm leading-6 text-[#3e4943]">{successMessage}</p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => navigate("/login")}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#12805c] text-base font-bold text-white transition hover:bg-[#006547]"
+              >
+                Se connecter
+                <ArrowRight size={18} />
+              </button>
+            </div>
+          )}
+        </div>
+
+        <footer className="mx-auto mt-6 flex w-full max-w-7xl flex-col items-center justify-between gap-4 border-t border-[#bdc9c1] bg-white px-4 py-6 text-sm text-[#6e7a72] md:flex-row md:px-8">
+          <div className="text-2xl font-semibold text-[#006547]">Sellam</div>
+          <p>© 2026 Sellam. Living Commerce, Calm Control.</p>
+          <div className="flex gap-4">
+            <a href="#" className="hover:text-[#006547]">Features</a>
+            <a href="#" className="hover:text-[#006547]">Pricing</a>
+            <a href="#" className="hover:text-[#006547]">Privacy</a>
+            <a href="#" className="hover:text-[#006547]">Terms</a>
           </div>
-        )}
+        </footer>
       </div>
-    </div>
+    </main>
   );
 }

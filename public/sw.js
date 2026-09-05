@@ -1,3 +1,22 @@
+self.addEventListener('install', function (event) {
+  if (self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1') {
+    self.skipWaiting();
+  }
+});
+
+self.addEventListener('activate', function (event) {
+  if (self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1') {
+    event.waitUntil(
+      Promise.all([
+        self.registration.unregister(),
+        caches.keys().then(function (names) {
+          return Promise.all(names.map(function (name) { return caches.delete(name); }));
+        })
+      ])
+    );
+  }
+});
+
 self.addEventListener('push', function (event) {
   if (event.data) {
     try {

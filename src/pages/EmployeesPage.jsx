@@ -231,13 +231,13 @@ export default function EmployeesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-hero-gradient text-white pb-24">
+    <div className="min-h-screen bg-[#f1fcf5] pb-24 text-[#141e1a]">
       {/* Header */}
-      <header className="sticky top-0 z-30 glass-nav px-4 py-3">
+      <header className="sticky top-0 z-30 border-b border-[#bdc9c1] bg-[#f1fcf5]/95 px-5 py-6 backdrop-blur md:px-8 lg:px-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Users size={24} className="text-brand-400" />
-            <h1 className="text-lg font-bold">Équipe</h1>
+            <div><p className="text-xs font-bold uppercase tracking-[0.08em] text-[#006547]">Organisation</p><h1 className="font-display text-2xl font-bold">Équipe</h1></div>
             <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-medium">
               {employees.length} employé{employees.length !== 1 ? "s" : ""}
             </span>
@@ -245,7 +245,7 @@ export default function EmployeesPage() {
           {isManager && (
             <button
               onClick={openCreateForm}
-              className="btn-gradient flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold"
+              className="flex items-center gap-1.5 rounded-lg bg-[#006547] px-3 py-2 text-sm font-semibold text-white"
             >
               <UserPlus size={16} />
               Ajouter
@@ -267,7 +267,7 @@ export default function EmployeesPage() {
       </header>
 
       {/* Content */}
-      <main className="px-4 pt-4 space-y-3">
+      <main className="mx-auto grid max-w-7xl grid-cols-1 gap-4 px-5 py-6 md:grid-cols-2 md:px-8 lg:grid-cols-3 lg:px-10">
         {error && (
           <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-300 flex items-center justify-between">
             {error}

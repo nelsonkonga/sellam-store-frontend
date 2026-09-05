@@ -6,7 +6,7 @@ import Stomp from 'stompjs';
 
 const useChatService = (conversationId) => {
   const { token, accountId } = useAuth();
-  const { currentShop } = useShop();
+  const { selectedShop } = useShop();
   const [messages, setMessages] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState(null);
@@ -23,7 +23,7 @@ const useChatService = (conversationId) => {
   };
 
   useEffect(() => {
-    if (!conversationId || !token || !currentShop) return;
+    if (!conversationId || !token || !selectedShop) return;
 
     const connectSocket = () => {
       try {
@@ -111,19 +111,19 @@ const useChatService = (conversationId) => {
         }
       }
     };
-  }, [conversationId, token, currentShop]);
+  }, [conversationId, token, selectedShop]);
 
   const sendMessage = (content) => {
-    if (!stompClient.current || !stompClient.current.connected) {
+    if (!selectedShop || !stompClient.current || !stompClient.current.connected) {
       setError('Not connected to chat. Attempting to reconnect...');
       reconnectAttempts.current = 0; // Reset to force reconnection
       return;
     }
 
     const messageDTO = {
-      shopId: currentShop.id,
+      shopId: selectedShop.id,
       senderId: accountId,
-      senderName: currentShop.name || 'User',
+      senderName: selectedShop.name || 'User',
       content,
       conversationId,
     };

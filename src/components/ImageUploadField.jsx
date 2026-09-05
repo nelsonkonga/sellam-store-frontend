@@ -18,7 +18,7 @@ export default function ImageUploadField({ label, previewUrl, onFileSelect, onCl
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+      <label className="text-sm font-medium text-[#3e4943]">
         {label}
       </label>
 
@@ -28,7 +28,7 @@ export default function ImageUploadField({ label, previewUrl, onFileSelect, onCl
             <img
               src={previewUrl}
               alt="Aperçu du produit"
-              className="h-20 w-20 rounded-xl object-cover ring-1 ring-gray-200 dark:ring-gray-700"
+              className="h-20 w-20 rounded-lg object-cover ring-1 ring-[#bdc9c1]"
             />
             <button
               type="button"
@@ -43,7 +43,7 @@ export default function ImageUploadField({ label, previewUrl, onFileSelect, onCl
         ) : (
           <div
             className="flex h-20 w-20 items-center justify-center rounded-xl
-                       bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500"
+                       bg-[#ebf6ef] text-[#6e7a72]"
           >
             <ImagePlus size={24} />
           </div>
@@ -53,8 +53,7 @@ export default function ImageUploadField({ label, previewUrl, onFileSelect, onCl
           type="button"
           onClick={() => inputRef.current?.click()}
           className="rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-medium
-                     text-gray-700 transition hover:bg-gray-50
-                     dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+                     text-[#3e4943] transition hover:bg-[#ebf6ef]"
         >
           {previewUrl ? "Changer la photo" : "Choisir une photo"}
         </button>

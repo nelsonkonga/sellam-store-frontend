@@ -2,6 +2,7 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useShop } from "../context/ShopContext";
 import EmailVerificationBanner from "./EmailVerificationBanner";
+import AppShell from "./AppShell";
 
 /**
  * Protège une route :
@@ -13,26 +14,59 @@ import EmailVerificationBanner from "./EmailVerificationBanner";
  * `requireShop` peut être mis à false pour une route protégée qui n'a pas
  * besoin d'une boutique sélectionnée (ex: /shops elle-même).
  */
-export default function ProtectedRoute({ children, requireShop = true }) {
-  const { isAuthenticated } = useAuth();
+export default function ProtectedRoute({ children, requireShop = true, requireManager = false }) {
+  const { isAuthenticated, isManager } = useAuth();
   const { selectedShopId } = useShop();
   const location = useLocation();
 
   if (!isAuthenticated) {
-    // On garde la page visée en state, pour pouvoir y renvoyer après connexion si besoin
-    return <Navigate to="/login" replace state={{ from: location }} />;
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{
+          from: location,
+          reason: "login_required",
+          message: "Connectez-vous pour accéder à cette page.",
+        }}
+      />
+    );
+  }
+
+  if (requireManager && !isManager) {
+    return (
+      <Navigate
+        to="/dashboard"
+        replace
+        state={{
+          from: location,
+          reason: "forbidden",
+          message: "Cette page est réservée aux comptes autorisés.",
+        }}
+      />
+    );
   }
 
   const isShopsPage = location.pathname === "/shops";
 
   if (requireShop && !selectedShopId && !isShopsPage) {
-    return <Navigate to="/shops" replace />;
+    return (
+      <Navigate
+        to="/shops"
+        replace
+        state={{
+          from: location,
+          reason: "shop_required",
+          message: "Sélectionnez ou créez une boutique pour continuer.",
+        }}
+      />
+    );
   }
 
   return (
-      <>
+      <AppShell>
         <EmailVerificationBanner />
         {children}
-      </>
+      </AppShell>
   );
 }

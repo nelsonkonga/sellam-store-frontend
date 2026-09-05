@@ -14,6 +14,7 @@ const STORAGE_KEYS = {
   email: "email",
   emailVerified: "emailVerified",
   tokenExpiresAt: "tokenExpiresAt",
+  profilePictureUrl: "profilePictureUrl",
 };
 
 /**
@@ -34,50 +35,54 @@ export function AuthProvider({ children }) {
     return stored ? parseInt(stored, 10) : null;
   });
 
-    const [email, setEmail] = useState(() => localStorage.getItem(STORAGE_KEYS.email));
-    const [emailVerified, setEmailVerified] = useState(
-        () => localStorage.getItem(STORAGE_KEYS.emailVerified) === "true"
-    );
+  const [email, setEmail] = useState(() => localStorage.getItem(STORAGE_KEYS.email));
+  const [emailVerified, setEmailVerified] = useState(
+      () => localStorage.getItem(STORAGE_KEYS.emailVerified) === "true"
+  );
+  const [profilePictureUrl, setProfilePictureUrl] = useState(() => localStorage.getItem(STORAGE_KEYS.profilePictureUrl) || "");
 
-    const login = useCallback(({ token, accountId, userType, shopId, name, phoneNumber, email, emailVerified }) => {
+  const login = useCallback(({ token, accountId, userType, shopId, name, phoneNumber, email, emailVerified, profilePictureUrl }) => {
 
-        const decoded = jwtDecode(token);
-        const expiresAt = decoded.exp * 1000; // conversion en millisecondes pour Date.now()
+      const decoded = jwtDecode(token);
+      const expiresAt = decoded.exp * 1000; // conversion en millisecondes pour Date.now()
 
-        localStorage.setItem(STORAGE_KEYS.token, token);
-        localStorage.setItem(STORAGE_KEYS.accountId, accountId);
-        localStorage.setItem(STORAGE_KEYS.userType, userType || "ACCOUNT");
-        if (shopId) localStorage.setItem(STORAGE_KEYS.shopId, shopId);
-        else localStorage.removeItem(STORAGE_KEYS.shopId);
-        localStorage.setItem(STORAGE_KEYS.name, name);
-        localStorage.setItem(STORAGE_KEYS.tokenExpiresAt, expiresAt.toString());
-        if (phoneNumber) localStorage.setItem(STORAGE_KEYS.phoneNumber, phoneNumber);
-        if (email) localStorage.setItem(STORAGE_KEYS.email, email);
-        localStorage.setItem(STORAGE_KEYS.emailVerified, String(!!emailVerified));
+      localStorage.setItem(STORAGE_KEYS.token, token);
+      localStorage.setItem(STORAGE_KEYS.accountId, accountId);
+      localStorage.setItem(STORAGE_KEYS.userType, userType || "ACCOUNT");
+      if (shopId) localStorage.setItem(STORAGE_KEYS.shopId, shopId);
+      else localStorage.removeItem(STORAGE_KEYS.shopId);
+      localStorage.setItem(STORAGE_KEYS.name, name);
+      localStorage.setItem(STORAGE_KEYS.tokenExpiresAt, expiresAt.toString());
+      if (phoneNumber) localStorage.setItem(STORAGE_KEYS.phoneNumber, phoneNumber);
+      if (email) localStorage.setItem(STORAGE_KEYS.email, email);
+      localStorage.setItem(STORAGE_KEYS.emailVerified, String(!!emailVerified));
+      if (profilePictureUrl) localStorage.setItem(STORAGE_KEYS.profilePictureUrl, profilePictureUrl);
 
-        setToken(token);
-        setAccountId(accountId);
-        setUserType(userType || "ACCOUNT");
-        setShopId(shopId || null);
-        setName(name);
-        setTokenExpiresAt(expiresAt);
-        if (phoneNumber) setPhoneNumber(phoneNumber);
-        setEmail(email || null);
-        setEmailVerified(!!emailVerified);
-    }, []);
+      setToken(token);
+      setAccountId(accountId);
+      setUserType(userType || "ACCOUNT");
+      setShopId(shopId || null);
+      setName(name);
+      setTokenExpiresAt(expiresAt);
+      if (phoneNumber) setPhoneNumber(phoneNumber);
+      setEmail(email || null);
+      setEmailVerified(!!emailVerified);
+      if (profilePictureUrl) setProfilePictureUrl(profilePictureUrl);
+  }, []);
 
-    const logout = useCallback(() => {
-        Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
-        setToken(null);
-        setAccountId(null);
-        setUserType("ACCOUNT");
-        setShopId(null);
-        setName(null);
-        setPhoneNumber(null);
-        setTokenExpiresAt(null);
-        setEmail(null);
-        setEmailVerified(false);
-    }, []);
+  const logout = useCallback(() => {
+      Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
+      setToken(null);
+      setAccountId(null);
+      setUserType("ACCOUNT");
+      setShopId(null);
+      setName(null);
+      setPhoneNumber(null);
+      setTokenExpiresAt(null);
+      setEmail(null);
+      setEmailVerified(false);
+      setProfilePictureUrl("");
+  }, []);
 
 
   const isTokenExpired = useCallback(() => {
@@ -85,36 +90,37 @@ export function AuthProvider({ children }) {
     return Date.now() > tokenExpiresAt;
   }, [tokenExpiresAt]);
 
-    const markEmailVerified = useCallback(() => {
-        localStorage.setItem(STORAGE_KEYS.emailVerified, "true");
-        setEmailVerified(true);
-    }, []);
+  const markEmailVerified = useCallback(() => {
+      localStorage.setItem(STORAGE_KEYS.emailVerified, "true");
+      setEmailVerified(true);
+  }, []);
 
   useEffect(() => {
     registerAuthAccessors({ token, logout, isTokenExpired });
   }, [token, logout, isTokenExpired]);
 
-    const isManager = userType === "ACCOUNT";
-    const isEmployee = userType === "USER";
+  const isManager = userType === "ACCOUNT";
+  const isEmployee = userType === "USER";
 
-    const value = {
-        token,
-        accountId,
-        userType,
-        shopId,
-        name,
-        phoneNumber,
-        tokenExpiresAt,
-        isAuthenticated: !!token,
-        isTokenExpired,
-        isManager,
-        isEmployee,
-        email,
-        emailVerified,
-        markEmailVerified,
-        login,
-        logout,
-    };
+  const value = {
+      token,
+      accountId,
+      userType,
+      shopId,
+      name,
+      phoneNumber,
+      tokenExpiresAt,
+      isAuthenticated: !!token,
+      isTokenExpired,
+      isManager,
+      isEmployee,
+      email,
+      emailVerified,
+      markEmailVerified,
+      profilePictureUrl,
+      login,
+      logout,
+  };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

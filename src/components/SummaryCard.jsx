@@ -3,21 +3,22 @@
  * `accentClassName` permet de personnaliser la couleur de l'icône selon le contexte
  * (ex: rouge pour une alerte stock).
  */
-export default function SummaryCard({ icon: Icon, label, value, accentClassName }) {
+export default function SummaryCard({ icon: Icon, label, value, unit = "FCFA", accentClassName }) {
   return (
     <div
-      className="flex flex-1 flex-col gap-2 rounded-2xl glass p-4 shadow-sm"
+      className="flex min-h-[126px] flex-1 flex-col justify-between rounded-xl border border-[#bdc9c1] bg-white p-4"
     >
       <div
-        className={`flex h-9 w-9 items-center justify-center rounded-full ${
-          accentClassName || "bg-brand-500/10 text-brand-400"
+        className={`flex items-center gap-2 text-sm text-[#3e4943] ${
+          accentClassName || ""
         }`}
       >
         <Icon size={18} />
+        <span>{label}</span>
       </div>
       <div>
-        <p className="text-lg font-bold text-gray-900 dark:text-white">{value}</p>
-        <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
+        <p className="font-mono text-2xl font-medium text-[#141e1a]">{value}</p>
+        <p className="mt-1 text-xs text-[#3e4943]">{unit}</p>
       </div>
     </div>
   );

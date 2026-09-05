@@ -10,6 +10,9 @@ import SearchBar from "../components/SearchBar";
 import ProductTile from "../components/ProductTile";
 import QuantityKeypad from "../components/QuantityKeypad";
 import { recalculateCart } from "../utils/localCartHelper";
+import SyncStatus from "../components/SyncStatus";
+import ErrorState from "../components/ErrorState";
+import EmptyState from "../components/EmptyState";
 
 const currencyFormatter = new Intl.NumberFormat("fr-FR", {
   style: "currency",
@@ -185,7 +188,12 @@ export default function NewSalePage() {
   }
 
   async function handleValidateSale() {
+    if (!invoice?.lines?.length) {
+      setError("Ajoutez au moins un produit avant de valider la vente.");
+      return;
+    }
     setValidating(true);
+    setError("");
     try {
       const payload = {
         customerName: customerName.trim() ? customerName.trim() : null,
@@ -200,7 +208,21 @@ export default function NewSalePage() {
       };
 
       const res = await saveInvoiceOfflineFirst(shopId, payload);
-      
+
+      // Si l'appareil est en ligne mais que la synchronisation avec le serveur
+      // a échoué, la vente reste en attente localement (non synchronisée).
+      // On prévient l'utilisateur au lieu de rediriger silencieusement comme
+      // si la vente avait bien atteint le serveur.
+      if (!res.offline && !res.synced) {
+        setError(
+          res.syncError
+            ? `Vente enregistrée localement, mais la synchronisation a échoué : ${res.syncError}. Elle sera resynchronisée automatiquement dès que possible.`
+            : "Vente enregistrée localement, mais la synchronisation avec le serveur a échoué. Elle sera resynchronisée automatiquement dès que possible."
+        );
+        setValidating(false);
+        return;
+      }
+
       navigate("/dashboard", {
         state: { 
             invoiceReady: !selectedShop?.autoPrintInvoices && !res.offline, 
@@ -216,87 +238,90 @@ export default function NewSalePage() {
 
   if (loading) {
     return (
-        <div className="min-h-screen bg-section-dark text-white flex items-center justify-center">
-          <p className="text-gray-400">Préparation de la vente...</p>
+        <div className="flex min-h-screen items-center justify-center bg-[#f1fcf5] text-[#141e1a]">
+          <p className="text-[#6e7a72]">Préparation de la vente...</p>
         </div>
     );
   }
 
   return (
-      <div className="min-h-screen bg-section-dark text-white pb-40">
-        <header className="flex items-center gap-3 px-5 pb-4 pt-6 mx-auto max-w-5xl">
+      <div className="min-h-screen bg-[#f1fcf5] pb-40 text-[#141e1a]">
+        <header className="mx-auto flex max-w-7xl items-center gap-3 border-b border-[#bdc9c1] px-5 pb-5 pt-7 md:px-8 lg:px-10">
           <button
               type="button"
               onClick={() => navigate("/dashboard")}
               aria-label="Retour"
-              className="flex h-9 w-9 items-center justify-center rounded-full text-gray-400 hover:bg-white/10"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-[#3e4943] hover:bg-[#dfebe4]"
           >
             <ArrowLeft size={20} />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-white">Nouvelle vente</h1>
-            <p className="text-xs text-gray-400">Mode hors-ligne supporté</p>
+            <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#006547]">Point de vente</p>
+            <h1 className="font-display text-2xl font-semibold">Nouvelle vente</h1>
+            <div className="mt-1 flex items-center gap-3 text-xs text-[#6e7a72]"><SyncStatus /><span>Les ventes sont conservées localement si nécessaire</span></div>
           </div>
         </header>
 
-        <main className="px-5 mx-auto max-w-5xl">
+        <main className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-5 py-6 md:px-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:px-10">
           {error && (
-              <div role="alert" className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm font-medium text-red-600 dark:bg-red-950/50 dark:text-red-400">
-                {error}
-              </div>
+              <ErrorState title="Vente impossible" message={error} />
           )}
 
-          {invoice && invoice.lines?.length > 0 && (
-              <div className="mb-4 rounded-xl glass p-4">
+            {invoice && invoice.lines?.length > 0 && (
+              <section className="order-2 mb-4 rounded-lg border border-[#bdc9c1] bg-white p-4 lg:order-2 lg:col-start-2 lg:row-span-3">
                 <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-sm font-semibold text-gray-300">Panier</h2>
+                  <h2 className="text-xl font-semibold text-[#141e1a]">Panier</h2>
                   <button
                       type="button"
                       onClick={() => setShowDiscountModal(true)}
-                      className="flex items-center gap-1 text-xs font-medium text-brand-400 hover:underline"
+                      className="flex items-center gap-1 text-xs font-medium text-[#006547] hover:underline"
                   >
                     <Percent size={14} /> Remise facture
                   </button>
                 </div>
                 {invoice.lines.map((line) => (
                     <div key={line.saleId} className="flex items-center justify-between py-1.5 text-sm">
-                      <span>{line.productName} × {line.quantity}</span>
+                      <span className="text-sm text-[#141e1a]">{line.productName} × {line.quantity}</span>
                       <div className="flex items-center gap-2">
                         <div className="text-right">
                           {line.discountAmount > 0 && (
-                            <span className="text-xs line-through text-gray-500 mr-1">
+                            <span className="mr-1 text-xs text-[#6e7a72] line-through">
                               {currencyFormatter.format(line.lineSubtotal)}
                             </span>
                           )}
-                          <span>{currencyFormatter.format(line.totalPrice)}</span>
+                          <span className="font-mono text-sm font-semibold">{currencyFormatter.format(line.totalPrice)}</span>
                           {line.discountAmount > 0 && (
-                            <p className="text-xs text-amber-400">-{currencyFormatter.format(line.discountAmount)}</p>
+                            <p className="text-xs text-[#9f6300]">-{currencyFormatter.format(line.discountAmount)}</p>
                           )}
                         </div>
-                        <button type="button" onClick={() => handleRemoveLine(line.saleId)} aria-label="Retirer" className="text-red-400 hover:text-red-300">
+                        <button type="button" onClick={() => handleRemoveLine(line.saleId)} aria-label="Retirer" className="text-[#ba1a1a] hover:text-[#93000a]">
                           <X size={14} />
                         </button>
                       </div>
                     </div>
                 ))}
-                <div className="mt-2 pt-2 border-t border-white/10 flex justify-between text-sm">
+                <div className="mt-2 flex justify-between border-t border-[#bdc9c1] pt-3 text-sm">
                   <span>Sous-total</span>
                   <span>{currencyFormatter.format(invoice.subtotal)}</span>
                 </div>
                 {invoice.discountAmount > 0 && (
-                    <div className="flex justify-between text-sm text-amber-400">
+                    <div className="flex justify-between text-sm text-[#9f6300]">
                       <span>Remise</span>
                       <span>-{currencyFormatter.format(invoice.discountAmount)}</span>
                     </div>
                 )}
-                <div className="flex justify-between text-base font-bold mt-1">
+                <div className="mt-2 flex justify-between border-t border-[#bdc9c1] pt-3 text-lg font-bold">
                   <span>Total</span>
                   <span>{currencyFormatter.format(invoice.totalAmount)}</span>
                 </div>
-              </div>
+              </section>
           )}
 
-          <div className="flex items-center gap-2">
+          {invoice && invoice.lines?.length === 0 && (
+            <div className="lg:col-span-2"><EmptyState title="Panier vide" message="Scannez un article ou sélectionnez une tuile pour commencer la vente." /></div>
+          )}
+
+          <div className="order-1 flex items-center gap-2 border-b border-[#bdc9c1] bg-[#f1fcf5] p-4 lg:col-start-1 lg:row-start-1 lg:col-span-2">
             <div className="flex-1">
               <SearchBar value={search} onChange={setSearch} onKeyDown={handleKeyDown} placeholder="Rechercher (ou scanner code-barre)..." />
             </div>
@@ -304,17 +329,17 @@ export default function NewSalePage() {
                 type="button"
                 onClick={() => setIsScannerOpen(true)}
                 aria-label="Scanner un code-barres"
-                className="flex h-[50px] w-[50px] flex-shrink-0 items-center justify-center rounded-xl glass text-gray-400 hover:bg-white/10"
+                className="flex h-[50px] w-[50px] flex-shrink-0 items-center justify-center rounded-lg border border-[#bdc9c1] bg-white text-[#3e4943] hover:bg-[#ebf6ef]"
             >
               <Camera size={20} />
             </button>
           </div>
 
-          {filteredProducts.length === 0 && (
-              <p className="mt-10 text-center text-sm text-gray-400">Aucun produit trouvé.</p>
+            {filteredProducts.length === 0 && (
+              <p className="mt-10 text-center text-sm text-[#6e7a72] lg:col-start-1">Aucun produit trouvé.</p>
           )}
 
-          <div className="mt-4 grid grid-cols-2 gap-3">
+          <div className="order-1 mt-4 grid grid-cols-2 gap-3 lg:col-start-1 lg:row-start-2 lg:grid-cols-3 lg:col-span-2">
             {filteredProducts.map((product) => (
                 <ProductTile key={product.id} product={product} onClick={() => openKeypad(product)} />
             ))}
@@ -322,20 +347,20 @@ export default function NewSalePage() {
         </main>
 
         {invoice && invoice.lines?.length > 0 && (
-            <div className="fixed bottom-0 left-0 right-0 px-5 pb-6 pt-4 bg-section-dark/95 backdrop-blur-md border-t border-white/10 z-40">
+            <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#bdc9c1] bg-[#f1fcf5]/95 px-5 pb-6 pt-4 backdrop-blur-md lg:static lg:col-start-2 lg:row-start-4 lg:bg-white lg:px-4">
               <div className="mx-auto max-w-5xl">
                 <input
                   type="text"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   placeholder="Nom du client (optionnel)"
-                  className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 mb-3 text-sm text-white placeholder-gray-500 focus:border-brand-500 focus:outline-none"
+                  className="mb-3 w-full rounded-lg border border-[#bdc9c1] bg-white px-4 py-3 text-sm text-[#141e1a] placeholder-[#6e7a72] focus:border-[#12805c] focus:outline-none"
                 />
                 <button
                     type="button"
                     onClick={handleValidateSale}
                     disabled={validating}
-                    className="w-full rounded-xl btn-gradient py-4 text-base font-bold shadow-lg disabled:opacity-60 block"
+                    className="block w-full rounded-lg bg-[#006547] py-4 text-base font-bold text-white shadow-lg transition hover:bg-[#12805c] disabled:opacity-60"
                 >
                   {validating ? "Validation..." : `Valider la vente — ${currencyFormatter.format(invoice.totalAmount)}`}
                 </button>
@@ -345,10 +370,10 @@ export default function NewSalePage() {
 
         {selectedProduct && (
             <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center" onClick={closeKeypad}>
-              <div onClick={(e) => e.stopPropagation()} className="w-full max-w-sm rounded-t-2xl glass-strong p-5 shadow-xl sm:rounded-2xl">
+              <div onClick={(e) => e.stopPropagation()} className="w-full max-w-sm rounded-t-2xl border border-[#bdc9c1] bg-white p-5 text-[#141e1a] shadow-xl sm:rounded-2xl">
                 <div className="mb-4 flex items-center justify-between">
-                  <h2 className="text-lg font-bold text-white">Quantité</h2>
-                  <button type="button" onClick={closeKeypad} aria-label="Fermer" className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-white/10">
+                  <h2 className="text-lg font-bold text-[#141e1a]">Quantité</h2>
+                  <button type="button" onClick={closeKeypad} aria-label="Fermer" className="flex h-8 w-8 items-center justify-center rounded-lg text-[#6e7a72] hover:bg-[#dfebe4]">
                     <X size={18} />
                   </button>
                 </div>
@@ -364,7 +389,7 @@ export default function NewSalePage() {
                       setLineDiscountValue("");
                     }
                   }}
-                  className="mt-3 flex items-center gap-1.5 text-xs font-medium text-brand-400 hover:underline"
+                  className="mt-3 flex items-center gap-1.5 text-xs font-medium text-[#006547] hover:underline"
                 >
                   <Tag size={14} />
                   {showLineDiscount ? "Annuler la remise" : "Ajouter une remise"}
@@ -377,7 +402,7 @@ export default function NewSalePage() {
                         type="button"
                         onClick={() => setLineDiscountType("PERCENTAGE")}
                         className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition ${
-                          lineDiscountType === "PERCENTAGE" ? "btn-gradient" : "bg-white/10"
+                          lineDiscountType === "PERCENTAGE" ? "bg-[#12805c] text-white" : "bg-[#ebf6ef] text-[#3e4943]"
                         }`}
                       >
                         Pourcentage (%)
@@ -386,7 +411,7 @@ export default function NewSalePage() {
                         type="button"
                         onClick={() => setLineDiscountType("FIXED_AMOUNT")}
                         className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition ${
-                          lineDiscountType === "FIXED_AMOUNT" ? "btn-gradient" : "bg-white/10"
+                          lineDiscountType === "FIXED_AMOUNT" ? "bg-[#12805c] text-white" : "bg-[#ebf6ef] text-[#3e4943]"
                         }`}
                       >
                         Montant fixe
@@ -403,11 +428,11 @@ export default function NewSalePage() {
                 )}
 
                 {confirmError && (
-                    <div role="alert" className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm font-medium text-red-600 dark:bg-red-950/50 dark:text-red-400">
+                    <div role="alert" className="mt-4 rounded-lg bg-[#ffdad6] px-4 py-3 text-sm font-medium text-[#93000a]">
                       {confirmError}
                     </div>
                 )}
-                <button type="button" onClick={handleAddLine} disabled={confirming} className="mt-4 w-full rounded-xl btn-gradient py-4 text-base font-bold disabled:opacity-60">
+                <button type="button" onClick={handleAddLine} disabled={confirming} className="mt-4 w-full rounded-lg bg-[#12805c] py-4 text-base font-bold text-white disabled:opacity-60">
                   {confirming ? "Ajout..." : "Ajouter au panier"}
                 </button>
               </div>
@@ -416,32 +441,33 @@ export default function NewSalePage() {
 
         {showDiscountModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowDiscountModal(false)}>
-              <div onClick={(e) => e.stopPropagation()} className="w-full max-w-sm rounded-2xl glass-strong p-6 shadow-xl">
+              <div onClick={(e) => e.stopPropagation()} className="w-full max-w-sm rounded-lg border border-[#bdc9c1] bg-white p-6 text-[#141e1a] shadow-xl">
                 <h2 className="text-lg font-bold mb-4">Remise sur la facture</h2>
                 <div className="flex gap-2 mb-4">
                   <button
                       type="button"
                       onClick={() => setDiscountType("PERCENTAGE")}
-                      className={`flex-1 rounded-lg py-2 text-sm font-semibold ${discountType === "PERCENTAGE" ? "btn-gradient" : "bg-white/10"}`}
+                      className={`flex-1 rounded-lg py-2 text-sm font-semibold ${discountType === "PERCENTAGE" ? "bg-[#12805c] text-white" : "bg-[#ebf6ef] text-[#3e4943]"}`}
                   >
                     Pourcentage (%)
                   </button>
                   <button
                       type="button"
                       onClick={() => setDiscountType("FIXED_AMOUNT")}
-                      className={`flex-1 rounded-lg py-2 text-sm font-semibold ${discountType === "FIXED_AMOUNT" ? "btn-gradient" : "bg-white/10"}`}
+                      className={`flex-1 rounded-lg py-2 text-sm font-semibold ${discountType === "FIXED_AMOUNT" ? "bg-[#12805c] text-white" : "bg-[#ebf6ef] text-[#3e4943]"}`}
                   >
                     Montant fixe
                   </button>
                 </div>
                 <input
                     type="number"
+                    autoFocus
                     value={discountValue}
                     onChange={(e) => setDiscountValue(e.target.value)}
                     placeholder={discountType === "PERCENTAGE" ? "Ex: 10" : "Ex: 500"}
-                    className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 mb-4"
+                    className="mb-4 w-full rounded-lg border border-[#bdc9c1] bg-white px-4 py-3"
                 />
-                <button type="button" onClick={handleApplyDiscount} className="w-full rounded-xl btn-gradient py-3.5 font-semibold">
+                <button type="button" onClick={handleApplyDiscount} className="w-full rounded-lg bg-[#12805c] py-3.5 font-semibold text-white">
                   Appliquer
                 </button>
               </div>

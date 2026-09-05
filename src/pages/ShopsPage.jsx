@@ -1,10 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getShops, createShop, uploadShopLogo } from "../services/shopService";
+import { getTodaySales } from "../services/saleService";
+import { listEmployees } from "../services/employeeService";
 import { useShop } from "../context/ShopContext";
 import ShopCard from "../components/ShopCard";
 import Modal from "../components/Modal";
 import FormField from "../components/FormField";
+import EmptyState from "../components/EmptyState";
+import ErrorState from "../components/ErrorState";
 
 export default function ShopsPage() {
   const [shops, setShops] = useState([]);
@@ -20,14 +24,37 @@ export default function ShopsPage() {
   const [creating, setCreating] = useState(false);
 
   const navigate = useNavigate();
-  const { selectShop } = useShop();
+  const { selectShop, selectedShopId } = useShop();
 
   // Charge la liste des boutiques au montage de la page
   useEffect(() => {
     async function fetchShops() {
+      setError("");
+      setLoading(true);
       try {
         const data = await getShops();
-        setShops(data);
+        const enrichedShops = await Promise.all(data.map(async (shop) => {
+          const [salesResult, employeesResult] = await Promise.allSettled([
+            getTodaySales(shop.id),
+            listEmployees(shop.id),
+          ]);
+          const sales = salesResult.status === "fulfilled" && Array.isArray(salesResult.value)
+            ? salesResult.value
+            : [];
+          const employees = employeesResult.status === "fulfilled" && Array.isArray(employeesResult.value)
+            ? employeesResult.value
+            : [];
+          const totalSales = sales.reduce((sum, sale) => sum + Number(sale.totalPrice || 0), 0);
+          const totalMargin = sales.reduce((sum, sale) => sum + Number(sale.margin || 0), 0);
+
+          return {
+            ...shop,
+            salesToday: totalSales,
+            margin: totalSales > 0 ? `${Math.round((totalMargin / totalSales) * 100)} %` : "—",
+            teamCount: employees.length,
+          };
+        }));
+        setShops(enrichedShops);
       } catch (err) {
         setError("Impossible de charger vos boutiques. Réessayez plus tard.");
       } finally {
@@ -36,6 +63,27 @@ export default function ShopsPage() {
     }
     fetchShops();
   }, []);
+
+  function retryFetchShops() {
+    setLoading(true);
+    getShops()
+      .then(async (data) => {
+        const enrichedShops = await Promise.all(data.map(async (shop) => {
+          const [salesResult, employeesResult] = await Promise.allSettled([
+            getTodaySales(shop.id),
+            listEmployees(shop.id),
+          ]);
+          const sales = salesResult.status === "fulfilled" && Array.isArray(salesResult.value) ? salesResult.value : [];
+          const employees = employeesResult.status === "fulfilled" && Array.isArray(employeesResult.value) ? employeesResult.value : [];
+          const totalSales = sales.reduce((sum, sale) => sum + Number(sale.totalPrice || 0), 0);
+          const totalMargin = sales.reduce((sum, sale) => sum + Number(sale.margin || 0), 0);
+          return { ...shop, salesToday: totalSales, margin: totalSales > 0 ? `${Math.round((totalMargin / totalSales) * 100)} %` : "—", teamCount: employees.length };
+        }));
+        setShops(enrichedShops);
+      })
+      .catch(() => setError("Impossible de charger vos boutiques. Réessayez."))
+      .finally(() => setLoading(false));
+  }
 
   // Redirection automatique supprimée pour permettre d'accéder à la liste
   // et de créer une nouvelle boutique même quand on n'en a qu'une seule.
@@ -114,69 +162,58 @@ export default function ShopsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-section-alt pb-24 text-white">
-      {/* En-tête */}
-      <header className="px-5 pb-4 pt-8 mx-auto max-w-5xl">
-        <h1 className="text-2xl font-bold text-white">
-          Mes boutiques
-        </h1>
-        <p className="mt-1 text-sm text-gray-300">
-          Choisissez une boutique pour continuer
-        </p>
-      </header>
+    <div className="min-h-screen bg-[#f7f8f5] px-4 py-6 text-[#141e1a] md:px-8 lg:px-10">
+      <div className="mx-auto max-w-5xl rounded-2xl border border-[#dce4de] bg-white/95 p-4 shadow-[0_4px_24px_rgba(0,0,0,0.05)] md:p-6 lg:p-8">
+        <header className="flex flex-col gap-4 border-b border-[#dce4de] pb-5 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#006547]">Votre réseau</p>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight text-[#141e1a]">Vos boutiques</h1>
+            <p className="mt-1 text-sm text-[#3e4943]">Sélectionnez un espace de travail pour continuer.</p>
+          </div>
 
-      <main className="flex flex-col gap-3 px-5 mx-auto max-w-5xl">
-        {loading && (
-          <p className="mt-10 text-center text-sm text-gray-400 dark:text-gray-500">
-            Chargement de vos boutiques...
-          </p>
-        )}
-
-        {!loading && error && (
-          <div
-            role="alert"
-            className="rounded-lg bg-red-50 px-4 py-3 text-sm font-medium text-red-600
-                       dark:bg-red-950/50 dark:text-red-400"
+          <button
+            type="button"
+            onClick={() => setShowCreateModal(true)}
+            aria-label="Nouvelle Boutique"
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-[#bdc9c1] bg-[#eef6f1] px-4 py-2.5 text-sm font-semibold text-[#006547] transition hover:border-[#12805c] hover:bg-[#e7f7ef]"
           >
-            {error}
-          </div>
-        )}
+            <span className="text-xl leading-none">+</span>
+            Nouvelle Boutique
+          </button>
+        </header>
 
-        {!loading && !error && shops.length === 0 && (
-          <div className="mt-16 flex flex-col items-center gap-3 text-center glass p-8 rounded-2xl">
-            <span className="text-4xl">🏪</span>
-            <p className="font-medium text-white">
-              Vous n'avez encore aucune boutique
-            </p>
-            <p className="text-sm text-gray-300">
-              Appuyez sur le bouton "+" pour créer votre première boutique
-            </p>
-          </div>
-        )}
+        <main className="pt-6">
+          {loading && (
+            <p className="mt-10 text-center text-sm text-[#6e7a72]">Chargement de vos boutiques...</p>
+          )}
 
-        {!loading &&
-          !error &&
-          shops.map((shop) => (
-            <ShopCard
-              key={shop.id}
-              shop={shop}
-              onSelect={handleSelectShop}
-              onEdit={handleEdit}
+          {!loading && error && (
+            <ErrorState title="Vos boutiques sont indisponibles" message={error} onRetry={retryFetchShops} />
+          )}
+
+          {!loading && !error && shops.length === 0 && (
+            <EmptyState
+              title="Votre espace est prêt pour sa première boutique"
+              message="Créez votre boutique pour commencer à vendre, suivre le stock et inviter votre équipe."
+              actionLabel="Créer une boutique"
+              onAction={() => setShowCreateModal(true)}
             />
-          ))}
-      </main>
+          )}
 
-      {/* Bouton flottant "+" pour créer une nouvelle boutique */}
-      <button
-        type="button"
-        onClick={() => setShowCreateModal(true)}
-        aria-label="Créer une boutique"
-        className="fixed bottom-24 right-6 md:right-10 md:bottom-10 flex h-16 w-16 items-center justify-center
-                   rounded-full btn-gradient text-3xl font-light text-white shadow-xl
-                   transition active:scale-95 glow-purple z-50"
-      >
-        +
-      </button>
+          {!loading && !error && shops.length > 0 && (
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              {shops.map((shop) => (
+                <ShopCard
+                  key={shop.id}
+                  shop={{ ...shop, isActive: shop.id === selectedShopId }}
+                  onSelect={handleSelectShop}
+                  onEdit={handleEdit}
+                />
+              ))}
+            </div>
+          )}
+        </main>
+      </div>
 
       {/* Modal de création de boutique */}
       {showCreateModal && (

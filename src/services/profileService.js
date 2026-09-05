@@ -22,3 +22,22 @@ export async function updateThemePreference(themePreference) {
   const response = await api.put("/profile/theme", { themePreference });
   return response.data;
 }
+export async function getCanChangeEmail() {
+  const { data } = await api.get('/identity/can-change-email');
+  return data;
+}
+
+export async function getCanChangePhone() {
+  const { data } = await api.get('/identity/can-change-phone');
+  return data;
+}
+
+export async function changeEmail(newEmail, adminOverride = false) {
+  const { data } = await api.put('/identity/email', { newEmail, adminOverride });
+  return data;
+}
+
+export async function changePhone(newPhoneNumber, adminOverride = false) {
+  const { data } = await api.put('/identity/phone', { newPhoneNumber, adminOverride });
+  return data;
+}

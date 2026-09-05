@@ -31,10 +31,9 @@ export default function NumericKeypad({ value, onChange, allowDecimal = true }) 
           key={key}
           type="button"
           onClick={() => handleKeyPress(key)}
-          className="flex h-16 items-center justify-center rounded-2xl bg-gray-100
-                     text-2xl font-semibold text-gray-800 transition
-                     hover:bg-gray-200 active:scale-95
-                     dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
+          className="flex h-16 items-center justify-center rounded-lg border border-[#bdc9c1] bg-[#ebf6ef]
+                     text-2xl font-semibold text-[#141e1a] transition
+                     hover:bg-[#dfebe4] active:scale-95"
         >
           {key === "⌫" ? <Delete size={24} /> : key}
         </button>

@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import useChatService from '../hooks/useChatService';
 import { useAuth } from '../context/AuthContext';
-import { Send, AlertCircle, Loader } from 'lucide-react';
+import { Send, AlertCircle, Loader, MessageSquare } from 'lucide-react';
 
 const ChatPage = () => {
   const { accountId } = useAuth();
+  const navigate = useNavigate();
   const conversationId = new URLSearchParams(window.location.search).get('id') || 'general';
   const { messages, isConnected, error, sendMessage } = useChatService(conversationId);
   const [inputValue, setInputValue] = useState('');
@@ -26,10 +28,10 @@ const ChatPage = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-white dark:bg-gray-900">
+    <div className="flex h-screen flex-col bg-[#f1fcf5] text-[#141e1a]">
       {/* Header */}
-      <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm">
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+      <div className="border-b border-[#bdc9c1] bg-white p-5 shadow-sm">
+        <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#006547]">Espace / Support</p><h1 className="font-display text-2xl font-semibold text-[#141e1a]">
           Chat - {conversationId}
         </h1>
         <div className="flex items-center gap-2 mt-2">
@@ -49,11 +51,18 @@ const ChatPage = () => {
         <div className="bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800 p-3 flex items-center gap-2">
           <AlertCircle className="text-red-600 dark:text-red-400" size={20} />
           <span className="text-sm text-red-700 dark:text-red-300">{error}</span>
+          <button
+            type="button"
+            onClick={() => navigate('/support')}
+            className="ml-auto flex shrink-0 items-center gap-1.5 rounded-lg border border-red-300 px-2.5 py-1.5 text-xs font-medium text-red-700 dark:border-red-700 dark:text-red-300"
+          >
+            <MessageSquare size={14} /> Ouvrir un ticket
+          </button>
         </div>
       )}
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col space-y-4 overflow-y-auto p-5">
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
             <p>No messages yet. Start a conversation!</p>
@@ -88,7 +97,7 @@ const ChatPage = () => {
       </div>
 
       {/* Input Area */}
-      <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-lg">
+      <div className="border-t border-[#bdc9c1] bg-white p-4 shadow-lg">
         <div className="flex gap-2">
           <input
             type="text"

@@ -13,16 +13,15 @@ const currencyFormatter = new Intl.NumberFormat("fr-FR", {
 export default function ProductTile({ product, onClick }) {
   const isLowStock = product.stockQuantity <= product.alertThreshold;
   const badgeColor = isLowStock
-    ? "bg-red-500/10 text-red-500 border border-red-500/20"
-    : "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20";
+    ? "bg-[#ffe8d1] text-[#9f6300] border border-[#ffddb9]"
+    : "bg-[#ddf4ea] text-[#006547] border border-[#79d9ae]";
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className="relative flex flex-col items-center gap-2 rounded-2xl glass p-3
-                 shadow-sm transition hover:shadow-md
-                 active:scale-95"
+      className="group relative flex flex-col items-center gap-2 overflow-hidden rounded border border-[#bdc9c1] bg-white p-3
+             transition hover:bg-[#ebf6ef] hover:shadow-sm active:scale-95"
     >
       {/* Badge de stock */}
       <span
@@ -38,23 +37,22 @@ export default function ProductTile({ product, onClick }) {
         />
       ) : (
         <div
-          className="flex h-16 w-16 items-center justify-center rounded-xl
-                     bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500"
+            className="flex h-20 w-full items-center justify-center rounded bg-[#dae5de] text-[#6e7a72]"
         >
           <Package size={26} />
         </div>
       )}
       <div className="w-full text-center">
-        <p className="line-clamp-2 text-sm font-medium leading-tight text-white">
+        <p className="line-clamp-2 text-sm font-semibold leading-tight text-[#141e1a]">
           {product.name}
         </p>
         {product.brand && (
-          <p className="mt-0.5 truncate text-[10px] text-gray-500 font-semibold uppercase tracking-wider">
+          <p className="mt-0.5 truncate text-[10px] font-semibold uppercase tracking-wider text-[#6e7a72]">
             {product.brand}
           </p>
         )}
       </div>
-      <p className="text-sm font-semibold text-brand-400">
+      <p className="font-mono text-sm font-semibold text-[#006547]">
         {currencyFormatter.format(product.sellingPrice || 0)}
       </p>
     </button>

@@ -14,11 +14,11 @@ import DashboardPage from "./pages/DashboardPage";
 import ProductsPage from "./pages/ProductsPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
 import NewSalePage from "./pages/NewSalePage";
-import DailyBalancePage from "./pages/DailyBalancePage";
 import BalanceSettingsPage from "./pages/BalanceSettingsPage";
 import ProfileSettingsPage from "./pages/ProfileSettingsPage";
 import {useAutoSync} from "./hooks/useSync.js";
 import OAuthCallbackPage from "./pages/OAuthCallbackPage.jsx";
+import OAuthErrorPage from "./pages/OAuthErrorPage.jsx";
 import VerifyEmailPage from "./pages/VerifyEmailPage.jsx";
 import InvoiceDetailPage from "./pages/InvoiceDetailPage.jsx";
 import InvoicesPage from "./pages/InvoicesPage.jsx";
@@ -27,6 +27,13 @@ import ShopSettingsPage from "./pages/ShopSettingsPage.jsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.jsx";
 import ChatPage from "./pages/ChatPage.jsx";
 import ReportsPage from "./pages/ReportsPage.jsx";
+import UserSupportPage from "./pages/UserSupportPage.jsx";
+import TicketDetailPage from "./pages/TicketDetailPage.jsx";
+import AdminSupportPage from "./pages/AdminSupportPage.jsx";
+import CashRegistersPage from "./pages/CashRegistersPage.jsx";
+import CashSessionPage from "./pages/CashSessionPage.jsx";
+import CashHistoryPage from "./pages/CashHistoryPage.jsx";
+import MembershipsPage from "./pages/MembershipsPage.jsx";
 
 export default function App() {
     useAutoSync();
@@ -46,6 +53,7 @@ export default function App() {
                                 <Route path="/register" element={<RegisterPage/>}/>
                                 <Route path="/forgot-password" element={<ForgotPasswordPage/>}/>
                                 <Route path="/oauth-callback" element={<OAuthCallbackPage/>}/>
+                                <Route path="/oauth-error" element={<OAuthErrorPage/>}/>
                                 <Route path="/verify-email" element={<VerifyEmailPage/>}/>
                                 <Route path="/invoices" element={<ProtectedRoute><InvoicesPage /></ProtectedRoute>} />
                                 <Route path="/invoices/:id" element={<ProtectedRoute><InvoiceDetailPage /></ProtectedRoute>} />
@@ -102,14 +110,6 @@ export default function App() {
                                     }
                                 />
                                 <Route
-                                    path="/balance"
-                                    element={
-                                        <ProtectedRoute>
-                                            <DailyBalancePage/>
-                                        </ProtectedRoute>
-                                    }
-                                />
-                                <Route
                                     path="/settings/balance"
                                     element={
                                         <ProtectedRoute>
@@ -120,8 +120,40 @@ export default function App() {
                                 <Route
                                     path="/employees"
                                     element={
-                                        <ProtectedRoute>
+                                        <ProtectedRoute requireManager>
                                             <EmployeesPage/>
+                                        </ProtectedRoute>
+                                    }
+                                />
+                                <Route
+                                    path="/memberships"
+                                    element={
+                                        <ProtectedRoute requireManager>
+                                            <MembershipsPage/>
+                                        </ProtectedRoute>
+                                    }
+                                />
+                                <Route
+                                    path="/cash"
+                                    element={
+                                        <ProtectedRoute requireManager>
+                                            <CashRegistersPage/>
+                                        </ProtectedRoute>
+                                    }
+                                />
+                                <Route
+                                    path="/cash/:registerId"
+                                    element={
+                                        <ProtectedRoute requireManager>
+                                            <CashSessionPage/>
+                                        </ProtectedRoute>
+                                    }
+                                />
+                                <Route
+                                    path="/cash/history"
+                                    element={
+                                        <ProtectedRoute requireManager>
+                                            <CashHistoryPage/>
                                         </ProtectedRoute>
                                     }
                                 />
@@ -157,6 +189,11 @@ export default function App() {
                                         </ProtectedRoute>
                                     }
                                 />
+
+                                {/* Support routes */}
+                                <Route path="/support" element={<ProtectedRoute requireShop={false}><UserSupportPage/></ProtectedRoute>} />
+                                <Route path="/support/tickets/:id" element={<ProtectedRoute requireShop={false}><TicketDetailPage/></ProtectedRoute>} />
+                                <Route path="/admin/support" element={<ProtectedRoute requireShop={false}><AdminSupportPage/></ProtectedRoute>} />
 
                                 {/* Toute route inconnue renvoie vers /login ; ProtectedRoute
                     prendra ensuite le relai pour rediriger plus loin si déjà connecté. */}

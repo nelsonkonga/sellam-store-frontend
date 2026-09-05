@@ -96,12 +96,12 @@ export default function BarcodeScannerModal({ isOpen, onClose, shopId, onProduct
 
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-opacity ${isOpen ? "opacity-100 visible" : "opacity-0 invisible pointer-events-none"}`}>
-      <div className="w-full max-w-md overflow-hidden rounded-2xl bg-section-dark border border-white/10 shadow-2xl">
+      <div className="w-full max-w-md overflow-hidden rounded-lg border border-[#bdc9c1] bg-white text-[#141e1a] shadow-2xl">
         <div className="flex items-center justify-between border-b border-white/10 p-4">
-          <h2 className="text-lg font-bold text-white">Scanner un produit</h2>
+          <h2 className="text-lg font-bold text-[#141e1a]">Scanner un produit</h2>
           <button
             onClick={handleClose}
-            className="rounded-full p-2 text-gray-400 hover:bg-white/10 hover:text-white transition"
+            className="rounded-lg p-2 text-[#6e7a72] transition hover:bg-[#ebf6ef] hover:text-[#141e1a]"
           >
             <X size={24} />
           </button>
@@ -114,7 +114,7 @@ export default function BarcodeScannerModal({ isOpen, onClose, shopId, onProduct
               <p className="text-sm px-4">{error}</p>
               <button
                 onClick={handleClose}
-                className="mt-4 rounded-xl bg-white/10 px-6 py-2 text-white hover:bg-white/20 transition"
+                className="mt-4 rounded-lg bg-[#006547] px-6 py-2 text-white transition hover:bg-[#12805c]"
               >
                 Saisie manuelle
               </button>

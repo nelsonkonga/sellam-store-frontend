@@ -88,11 +88,17 @@ export function usePushNotifications() {
     setIsSupported(true);
     setPermission(Notification.permission);
     
+    // Détection mobile pour ajuster le comportement
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    console.log('[Push] Mobile device detected:', isMobile);
+    
     // Auto-subscribe if already granted but maybe not registered in DB
-    if (Notification.permission === 'granted' && selectedShopId) {
+    // Sur mobile, on attend une interaction utilisateur explicite pour éviter les blocages
+    if (Notification.permission === 'granted' && selectedShopId && !isMobile) {
       requestPermissionAndSubscribe();
     }
-  }, [selectedShopId, requestPermissionAndSubscribe]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedShopId]);
 
   return { permission, isSupported, isSubscribing, requestPermissionAndSubscribe };
 }

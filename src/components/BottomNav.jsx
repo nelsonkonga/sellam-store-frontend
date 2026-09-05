@@ -16,8 +16,9 @@ const ALL_TABS = [
   { to: "/products", label: "Produits", icon: Package },
   { to: "/sales/new", label: "Ventes", icon: ShoppingCart },
   { to: "/invoices", label: "Factures", icon: FileText },
+  { to: "/cash", label: "Caisses", icon: BarChart3, managerOnly: true },
   { to: "/employees", label: "Équipe", icon: Users, managerOnly: true },
-  { to: "/balance", label: "Bilan", icon: BarChart3 },
+  { to: "/memberships", label: "Membres", icon: Users, managerOnly: true },
   { to: "/settings/profile", label: "Paramètres", icon: Settings },
 ];
 
@@ -32,7 +33,7 @@ export default function BottomNav() {
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around
-                 glass-nav py-2"
+                 border-t border-[#bdc9c1] bg-[#f1fcf5] py-2 lg:hidden"
     >
       {TABS.map(({ to, label, icon: Icon }) => (
         <NavLink
@@ -41,8 +42,8 @@ export default function BottomNav() {
           className={({ isActive }) =>
             `flex flex-1 flex-col items-center gap-1 py-1 text-[11px] font-medium transition ${
               isActive
-                ? "text-brand-400 drop-shadow-md"
-                : "text-gray-400"
+                ? "text-[#006547]"
+                : "text-[#6e7a72]"
             }`
           }
         >

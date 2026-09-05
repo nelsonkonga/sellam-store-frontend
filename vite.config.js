@@ -14,8 +14,8 @@ export default defineConfig({
         name: 'Sellam',
         short_name: 'Sellam',
         description: 'Gérez vos boutiques, ventes et bilans en toute simplicité.',
-        theme_color: '#6d28d9',
-        background_color: '#f5f3ff',
+        theme_color: '#006547',
+        background_color: '#f1fcf5',
         display: 'standalone',
         display_override: ['window-controls-overlay', 'standalone', 'minimal-ui'],
         start_url: '/',
@@ -86,9 +86,10 @@ export default defineConfig({
           },
           {
             urlPattern: ({ request }) => ['document', 'script', 'style', 'image', 'font'].includes(request.destination),
-            handler: 'CacheFirst',
+            handler: 'NetworkFirst',
             options: {
               cacheName: 'sellam-assets-cache',
+              networkTimeoutSeconds: 5,
               expiration: {
                 maxEntries: 200,
                 maxAgeSeconds: 60 * 60 * 24 * 30

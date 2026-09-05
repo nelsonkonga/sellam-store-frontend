@@ -41,26 +41,45 @@ export async function downloadInvoicePdf(invoiceId) {
     
     const fileUrl = window.URL.createObjectURL(new Blob([response.data], { type: "application/pdf" }));
     
-    // Impression silencieuse via iframe invisible
-    const iframe = document.createElement("iframe");
-    iframe.style.display = "none";
-    iframe.src = fileUrl;
+    // Détection mobile pour adapter le comportement
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     
-    document.body.appendChild(iframe);
-    
-    iframe.onload = () => {
+    if (isMobile) {
+        // Sur mobile, ouvrir le PDF dans un nouvel onglet pour permettre le téléchargement/impression natif
+        const link = document.createElement("a");
+        link.href = fileUrl;
+        link.download = `facture-${invoiceId}.pdf`;
+        link.target = "_blank";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Nettoyage
         setTimeout(() => {
-            iframe.contentWindow.focus();
-            iframe.contentWindow.print();
-            // Nettoyage
+            window.URL.revokeObjectURL(fileUrl);
+        }, 1000);
+    } else {
+        // Sur desktop, impression silencieuse via iframe invisible
+        const iframe = document.createElement("iframe");
+        iframe.style.display = "none";
+        iframe.src = fileUrl;
+        
+        document.body.appendChild(iframe);
+        
+        iframe.onload = () => {
             setTimeout(() => {
-                if (document.body.contains(iframe)) {
-                    document.body.removeChild(iframe);
-                }
-                window.URL.revokeObjectURL(fileUrl);
-            }, 10000);
-        }, 500);
-    };
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+                // Nettoyage
+                setTimeout(() => {
+                    if (document.body.contains(iframe)) {
+                        document.body.removeChild(iframe);
+                    }
+                    window.URL.revokeObjectURL(fileUrl);
+                }, 10000);
+            }, 500);
+        };
+    }
 }
 
 export async function listInvoices(shopId) {

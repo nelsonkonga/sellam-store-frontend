@@ -13,15 +13,16 @@ function applyTheme(theme) {
       window.matchMedia("(prefers-color-scheme: dark)").matches);
 
   root.classList.toggle("dark", shouldBeDark);
+  root.style.colorScheme = shouldBeDark ? "dark" : "light";
 }
 
 /**
  * Fournit la préférence de thème ('light' | 'dark' | 'system') à toute l'application.
- * IMPORTANT: état gardé en mémoire pour la session uniquement (pas de localStorage) —
- * un rechargement de page revient donc à 'system' par défaut, volontairement.
+ * IMPORTANT: état gardé en localStorage pour persister entre les sessions.
+ * Si aucune préférence n'est sauvegardée, utilise 'system' par défaut.
  */
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(() => localStorage.getItem("theme") || THEMES.DARK);
+  const [theme, setTheme] = useState(() => localStorage.getItem("theme") || THEMES.LIGHT);
 
   // Applique le thème à chaque changement de préférence
   useEffect(() => {

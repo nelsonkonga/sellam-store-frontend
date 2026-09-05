@@ -147,7 +147,7 @@ export default function ShopSettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-section-alt pb-24 text-white">
+    <div className="min-h-screen bg-[var(--bg-page)] pb-24 text-[var(--text-primary)]">
       <header className="px-5 pb-4 pt-6 mx-auto max-w-5xl">
         <h1 className="text-2xl font-bold text-white">
           Paramètres de la boutique

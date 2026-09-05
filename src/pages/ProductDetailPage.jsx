@@ -7,6 +7,7 @@ import {
   updateProduct,
   getSaleTypes,
   createSaleType,
+  uploadProductPicture,
 } from "../services/productService";
 import Modal from "../components/Modal";
 import { useShop } from "../context/ShopContext";
@@ -190,6 +191,11 @@ export default function ProductDetailPage() {
     return Object.keys(errors).length === 0;
   }
 
+  const margin = Number(form.sellingPrice || 0) - Number(form.purchasePrice || 0);
+  const marginRate = Number(form.sellingPrice || 0) > 0
+    ? (margin / Number(form.sellingPrice)) * 100
+    : 0;
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
@@ -228,46 +234,54 @@ export default function ProductDetailPage() {
 
       navigate("/products");
     } catch (err) {
-      const backendMessage =
-        err.response?.data?.message || err.response?.data?.error;
-      setError(backendMessage || "Impossible d'enregistrer le produit.");
+      const status = err.response?.status;
+      const backendMessage = err.response?.data?.message;
+      if (status === 403) {
+        setError(
+          isEditMode
+            ? "Vous n'êtes pas autorisé à modifier ce produit. La permission « Modifier les produits » est requise."
+            : "Vous n'êtes pas autorisé à créer un produit. La permission « Modifier les produits » est requise."
+        );
+      } else if (status === 401) {
+        setError("Votre session a expiré. Reconnectez-vous pour enregistrer ce produit.");
+      } else {
+        setError(backendMessage || "Impossible d'enregistrer le produit.");
+      }
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <div className="min-h-screen bg-section-dark pb-10 text-white">
+    <div className="min-h-screen bg-[#f1fcf5] pb-10 text-[#141e1a]">
       {/* En-tête avec retour */}
-      <header className="flex items-center gap-3 px-5 pb-4 pt-6 mx-auto max-w-5xl">
+      <header className="mx-auto flex max-w-7xl items-center gap-3 border-b border-[#bdc9c1] px-5 pb-5 pt-7 md:px-8 lg:px-10">
         <button
           type="button"
           onClick={() => navigate("/products")}
           aria-label="Retour"
           className="flex h-9 w-9 items-center justify-center rounded-full
-                     text-gray-500 transition hover:bg-gray-100
-                     dark:text-gray-400 dark:hover:bg-gray-800"
+                     text-[#3e4943] transition hover:bg-[#dfebe4]"
         >
           <ArrowLeft size={20} />
         </button>
-        <h1 className="text-xl font-bold text-white">
+        <div><p className="text-xs font-bold uppercase tracking-[0.08em] text-[#006547]">Catalogue / Fiche</p><h1 className="font-display text-2xl font-semibold text-[#141e1a]">
           {isEditMode ? "Modifier le produit" : "Nouveau produit"}
-        </h1>
+        </h1></div>
       </header>
 
-      <main className="px-5 mx-auto max-w-5xl">
+      <main className="mx-auto max-w-7xl px-5 py-6 md:px-8 lg:px-10">
         {loading ? (
-          <p className="mt-10 text-center text-sm text-gray-400 dark:text-gray-500">
+          <p className="mt-10 text-center text-sm text-[#6e7a72]">
             Chargement du produit...
           </p>
         ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-            <ImageUploadField
-              label="Photo du produit"
-              previewUrl={imagePreview}
-              onFileSelect={handleFileSelect}
-              onClear={handleClearImage}
-            />
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+            <div className="order-2 flex flex-col gap-5 lg:order-1">
+            <section className="rounded-xl border border-[#bdc9c1] bg-white p-5">
+              <h2 className="mb-4 border-b border-[#dfebe4] pb-3 text-xl font-semibold text-[#141e1a]">Identité</h2>
+              <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-5">
 
             <div>
               <FormField
@@ -293,7 +307,7 @@ export default function ProductDetailPage() {
                 placeholder="Ex: 6194000123456"
                 required={false}
               />
-              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+              <p className="mt-1 text-xs text-[#6e7a72]">
                 Laisser vide si le produit n'a pas de code-barres
               </p>
             </div>
@@ -302,7 +316,7 @@ export default function ProductDetailPage() {
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="saleTypeId"
-                className="text-sm font-medium text-gray-300"
+                className="text-sm font-medium text-[#3e4943]"
               >
                 Type de vente
               </label>
@@ -311,10 +325,7 @@ export default function ProductDetailPage() {
                 name="saleTypeId"
                 value={form.saleTypeId}
                 onChange={handleChange}
-                className="w-full rounded-xl border border-white/10 glass px-4 py-3
-                           text-base text-white shadow-sm outline-none transition
-                           focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30
-                           appearance-none"
+                className="custom-select"
               >
                 <option value="" disabled>-- Sélectionner --</option>
                 {saleTypes.map((type) => (
@@ -322,7 +333,7 @@ export default function ProductDetailPage() {
                     {type.name} ({type.unitLabel})
                   </option>
                 ))}
-                <option value="CREATE_NEW" className="font-semibold text-brand-600">
+                <option value="CREATE_NEW" className="font-semibold text-[#006547]">
                   + Créer un nouveau type
                 </option>
               </select>
@@ -332,8 +343,9 @@ export default function ProductDetailPage() {
                 </p>
               )}
             </div>
+            </div></div></section>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="rounded-xl border border-[#bdc9c1] bg-white p-5"><h2 className="mb-4 border-b border-[#dfebe4] pb-3 text-xl font-semibold text-[#141e1a]">Prix & Rentabilité</h2><div className="grid grid-cols-2 gap-4">
               <div>
                 <NumberField
                   id="purchasePrice"
@@ -362,8 +374,13 @@ export default function ProductDetailPage() {
                   </p>
                 )}
               </div>
+            </div></div>
+
+            <div className="flex items-center justify-between rounded-lg border border-[#dae5de] bg-[#ebf6ef] p-4">
+              <span className="text-sm text-[#3e4943]">Marge estimée</span><div className="flex gap-6 text-right"><div><p className="text-[10px] font-bold uppercase tracking-[0.05em] text-[#6e7a72]">Marge brute</p><p className={`font-mono text-sm font-bold ${margin < 0 ? "text-[#ba1a1a]" : "text-[#006547]"}`}>{margin.toLocaleString("fr-FR")} FCFA</p></div><div><p className="text-[10px] font-bold uppercase tracking-[0.05em] text-[#6e7a72]">Taux</p><p className="font-mono text-sm font-bold text-[#006547]">{marginRate.toFixed(1)} %</p></div></div>
             </div>
 
+            <section className="rounded-xl border border-[#bdc9c1] bg-white p-5"><h2 className="mb-4 border-b border-[#dfebe4] pb-3 text-xl font-semibold text-[#141e1a]">Stock</h2><div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <NumberField
                 id="stockQuantity"
@@ -394,14 +411,14 @@ export default function ProductDetailPage() {
                   {fieldErrors.alertThreshold}
                 </p>
               )}
-            </div>
+            </div></div></section>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <section className="rounded-xl border border-[#bdc9c1] bg-white p-5"><h2 className="mb-4 border-b border-[#dfebe4] pb-3 text-xl font-semibold text-[#141e1a]">Informations complémentaires</h2><div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {/* Catégorie avec suggestions basées sur les catégories existantes */}
               <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="category"
-                  className="text-sm font-medium text-gray-300"
+                  className="text-sm font-medium text-[#3e4943]"
                 >
                   Catégorie
                 </label>
@@ -413,9 +430,7 @@ export default function ProductDetailPage() {
                   value={form.category}
                   onChange={handleChange}
                   placeholder="Ex: Épicerie"
-                  className="w-full rounded-xl border border-white/10 glass px-4 py-3 text-base
-                             text-white placeholder-gray-500 shadow-sm outline-none
-                             transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30"
+                  className="w-full rounded-lg border border-[#bdc9c1] bg-white px-4 py-3 text-base text-[#141e1a] placeholder-[#6e7a72] shadow-sm outline-none transition focus:border-[#12805c] focus:ring-2 focus:ring-[#12805c]/30"
                 />
                 <datalist id="category-suggestions">
                   {categorySuggestions.map((cat) => (
@@ -427,7 +442,7 @@ export default function ProductDetailPage() {
               <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="brand"
-                  className="text-sm font-medium text-gray-300"
+                  className="text-sm font-medium text-[#3e4943]"
                 >
                   Marque
                 </label>
@@ -438,18 +453,23 @@ export default function ProductDetailPage() {
                   value={form.brand}
                   onChange={handleChange}
                   placeholder="Ex: Nestlé"
-                  className="w-full rounded-xl border border-white/10 glass px-4 py-3 text-base
-                             text-white placeholder-gray-500 shadow-sm outline-none
-                             transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30"
+                  className="w-full rounded-lg border border-[#bdc9c1] bg-white px-4 py-3 text-base text-[#141e1a] placeholder-[#6e7a72] shadow-sm outline-none transition focus:border-[#12805c] focus:ring-2 focus:ring-[#12805c]/30"
                 />
               </div>
-            </div>
+            </div></section>
+
+            <section className="rounded-xl border border-[#bdc9c1] bg-white p-5"><h2 className="mb-4 border-b border-[#dfebe4] pb-3 text-xl font-semibold text-[#141e1a]">Média</h2><ImageUploadField
+              label="Photo du produit"
+              previewUrl={imagePreview}
+              onFileSelect={handleFileSelect}
+              onClear={handleClearImage}
+            /></section>
 
             {error && (
               <div
                 role="alert"
                 className="rounded-lg bg-red-50 px-4 py-3 text-sm font-medium text-red-600
-                           dark:bg-red-950/50 dark:text-red-400"
+                           text-red-600"
               >
                 {error}
               </div>
@@ -458,8 +478,8 @@ export default function ProductDetailPage() {
             <button
               type="submit"
               disabled={saving}
-              className="mt-2 w-full rounded-xl btn-gradient py-3.5 text-base font-semibold
-                         text-white shadow-md transition
+              className="mt-2 w-full rounded-lg bg-[#12805c] py-3.5 text-base font-semibold
+                         text-white shadow-md transition hover:bg-[#006547]
                          disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saving
@@ -468,6 +488,17 @@ export default function ProductDetailPage() {
                 ? "Enregistrer les modifications"
                 : "Créer le produit"}
             </button>
+            </div>
+            <aside className="order-1 h-fit rounded-xl border border-[#bdc9c1] bg-white p-5 lg:order-2 lg:sticky lg:top-20">
+              <h2 className="border-b border-[#bdc9c1] pb-3 text-xs font-bold uppercase tracking-[0.08em] text-[#3e4943]">Résumé</h2>
+              <div className="mt-5 flex flex-col gap-5">
+                <div><p className="text-sm text-[#3e4943]">Prix de vente</p><p className="font-mono text-2xl font-bold text-[#141e1a]">{Number(form.sellingPrice || 0).toLocaleString("fr-FR")} FCFA</p></div>
+                <div><p className="text-sm text-[#3e4943]">Marge</p><p className="font-mono text-xl text-[#006547]">{marginRate.toFixed(1)} %</p></div>
+                <div><p className="mb-1 text-sm text-[#3e4943]">Santé du stock</p><span className={`inline-flex rounded px-2 py-1 text-xs font-bold uppercase ${Number(form.stockQuantity || 0) <= Number(form.alertThreshold || 0) ? "bg-[#ffe8d1] text-[#9f6300]" : "bg-[#ddf4ea] text-[#006547]"}`}>{Number(form.stockQuantity || 0) <= Number(form.alertThreshold || 0) ? "À surveiller" : `En stock (${form.stockQuantity || 0})`}</span></div>
+              </div>
+              <button type="submit" disabled={saving} className="mt-8 flex h-11 w-full items-center justify-center rounded-lg bg-[#12805c] text-sm font-semibold text-white transition hover:bg-[#006547] disabled:opacity-60">{saving ? "Enregistrement..." : "Enregistrer"}</button>
+              <button type="button" onClick={() => navigate("/products")} className="mt-2 hidden h-11 w-full rounded-lg border border-[#bdc9c1] text-sm font-semibold text-[#141e1a] transition hover:bg-[#ebf6ef] md:block">Annuler</button>
+            </aside>
           </form>
         )}
       </main>
@@ -496,14 +527,14 @@ export default function ProductDetailPage() {
               <button
                 type="button"
                 onClick={() => setShowSaleTypeModal(false)}
-                className="rounded-lg px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="rounded-lg px-4 py-2 text-sm font-medium text-[#3e4943] hover:bg-[#ebf6ef]"
               >
                 Annuler
               </button>
               <button
                 type="submit"
                 disabled={creatingSaleType}
-                className="btn-gradient rounded-lg px-4 py-2 text-sm font-semibold text-white"
+                className="rounded-lg bg-[#12805c] px-4 py-2 text-sm font-semibold text-white"
               >
                 {creatingSaleType ? "Création..." : "Créer"}
               </button>
