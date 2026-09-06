@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Wallet, TrendingUp, AlertTriangle, Plus, ShoppingBag, Cloud } from "lucide-react";
-import { getProducts } from "../services/productService";
-import { getTodaySales } from "../services/saleService";
-import { listInvoices } from "../services/invoiceService";
+import { getDashboardData } from "../services/dashboardService";
 import { getNotifications } from "../services/notificationService";
 import { getCashStatus } from "../services/cashService";
 import { useAuth } from "../context/AuthContext";
@@ -24,9 +22,7 @@ const currencyFormatter = new Intl.NumberFormat("fr-FR", {
 });
 
 export default function DashboardPage() {
-  const [products, setProducts] = useState([]);
-  const [sales, setSales] = useState([]);
-  const [invoices, setInvoices] = useState([]);
+  const [dashboardData, setDashboardData] = useState(null);
   const [cashStatus, setCashStatus] = useState(null);
   const [hasNotifications, setHasNotifications] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -38,7 +34,7 @@ export default function DashboardPage() {
   const { selectedShopId: shopId, selectedShopName, selectedShop } = useShop();
   const routeMessage = location.state?.message || "";
 
-  // Charge produits + ventes du jour dès qu'on connaît la boutique active
+  // Charge les données consolidées du cockpit dès qu'on connaît la boutique active
   useEffect(() => {
     // Sans boutique sélectionnée, on ne peut rien afficher : retour à la sélection
     if (!shopId) {
@@ -46,24 +42,22 @@ export default function DashboardPage() {
       return;
     }
 
-    async function fetchDashboardData() {
+    async function fetchDashboard() {
       try {
-        const [productsResult, salesResult, invoicesResult, notificationsResult, cashResult] = await Promise.allSettled([
-          getProducts(shopId),
-          getTodaySales(shopId),
-          listInvoices(shopId),
+        const [dashboardResult, notificationsResult, cashResult] = await Promise.allSettled([
+          getDashboardData(shopId),
           getNotifications(shopId),
           getCashStatus(shopId),
         ]);
-        setProducts(productsResult.status === "fulfilled" ? productsResult.value : []);
-        setSales(salesResult.status === "fulfilled" ? salesResult.value : []);
-        setInvoices(invoicesResult.status === "fulfilled" ? invoicesResult.value : []);
-        setCashStatus(cashResult.status === "fulfilled" ? cashResult.value : null);
-        if ([productsResult, salesResult, invoicesResult].every((result) => result.status === "rejected")) {
-          setError("Impossible de charger les données du tableau de bord.");
-        } else {
+
+        if (dashboardResult.status === "fulfilled") {
+          setDashboardData(dashboardResult.value);
           setError("");
+        } else {
+          setError("Impossible de charger les données du tableau de bord.");
         }
+
+        setCashStatus(cashResult.status === "fulfilled" ? cashResult.value : null);
 
         const notificationsData = notificationsResult.status === "fulfilled" ? notificationsResult.value : [];
         if (Array.isArray(notificationsData) && notificationsData.length > 0) {
@@ -82,20 +76,20 @@ export default function DashboardPage() {
         setLoading(false);
       }
     }
-    fetchDashboardData();
-  }, [shopId, navigate]); // Initial load
+    fetchDashboard();
+  }, [shopId, navigate]);
 
   const handleMarkAsRead = () => {
     setHasNotifications(false);
   };
 
-  // Calculs dérivés des données brutes — recalculés uniquement quand la source change
-  const totalSalesToday = sales.reduce((sum, sale) => sum + Number(sale.totalPrice || 0), 0);
-  const totalMarginToday = sales.reduce((sum, sale) => sum + Number(sale.margin || 0), 0);
-  const averageBasket = invoices.length > 0 ? totalSalesToday / invoices.length : 0;
-  const lowStockCount = products.filter(
-    (p) => Number(p.stockQuantity || 0) <= Number(p.alertThreshold || 0)
-  ).length;
+  // Valeurs consolidées et agrégées côté base de données
+  const totalSalesToday = dashboardData?.kpis?.totalSalesToday ?? 0;
+  const totalMarginToday = dashboardData?.kpis?.totalMarginToday ?? 0;
+  const averageBasket = dashboardData?.kpis?.averageBasket ?? 0;
+  const lowStockCount = dashboardData?.kpis?.lowStockCount ?? 0;
+  const recentInvoices = dashboardData?.recentInvoices || [];
+  const criticalProducts = dashboardData?.criticalProducts || [];
 
   function getStatusBadge(status) {
     if (!status) return <span className="px-2 py-1 rounded-[4px] bg-[#bdc9c1] text-[#3e4943] text-[10px] font-bold uppercase tracking-wider">Inconnu</span>;
@@ -186,15 +180,7 @@ export default function DashboardPage() {
     <span className="rounded-full bg-[#ebf6ef] px-2.5 py-0.5 text-xs font-semibold text-[#006547]">Aujourd'hui</span>
   </div>
 
-  {invoices.filter((invoice) => {
-    const invoiceDate = new Date(invoice.createdAt);
-    const today = new Date();
-    return (
-      invoiceDate.getDate() === today.getDate() &&
-      invoiceDate.getMonth() === today.getMonth() &&
-      invoiceDate.getFullYear() === today.getFullYear()
-    );
-  }).length === 0 ? (
+  {recentInvoices.length === 0 ? (
     <EmptyState 
       title="Aucune facture aujourd'hui" 
       message="Les factures créées pendant la journée apparaîtront ici." 
@@ -204,18 +190,7 @@ export default function DashboardPage() {
   ) : (
     /* Conteneur de la timeline avec une ligne verticale décorative à gauche */
     <div className="relative border-l-2 border-dashed border-[#bdc9c1] ml-2 pl-6 space-y-4 py-2">
-      {invoices
-        .filter((invoice) => {
-          const invoiceDate = new Date(invoice.createdAt);
-          const today = new Date();
-          return (
-            invoiceDate.getDate() === today.getDate() &&
-            invoiceDate.getMonth() === today.getMonth() &&
-            invoiceDate.getFullYear() === today.getFullYear()
-          );
-        })
-        .slice(0, 10)
-        .map((invoice) => (
+      {recentInvoices.map((invoice) => (
           <div
             key={invoice.id}
             onClick={() => navigate(`/invoices/${invoice.id}`)}
@@ -257,7 +232,7 @@ export default function DashboardPage() {
             <section className="overflow-hidden rounded-xl border border-[#bdc9c1] bg-white">
               <div className="flex items-center justify-between border-b border-[#bdc9c1] bg-[#ebf6ef]/50 p-4">
                 <h2 className="font-display text-xl font-semibold">Caisse</h2>
-                  {cashStatus.activeSession ? getStatusBadge(cashStatus.activeSession.status) : getStatusBadge(null)}
+                  {cashStatus?.activeSession ? getStatusBadge(cashStatus.activeSession.status) : getStatusBadge(null)}
                 
               </div>
               <div className="flex flex-col gap-4 p-4">
@@ -273,11 +248,13 @@ export default function DashboardPage() {
             <section className="rounded-xl border border-[#bdc9c1] bg-white p-4">
               <div className="mb-3 flex items-center justify-between border-b border-[#bdc9c1] pb-3"><h2 className="flex items-center gap-2 font-display text-lg font-semibold"><AlertTriangle size={19} className="text-[#9f6300]" />Stock critique</h2><span className="rounded-full bg-[#ffe8d1] px-2 py-1 text-xs font-bold text-[#9f6300]">{lowStockCount}</span></div>
 
-              {products.length === 0 ? (
-                <EmptyState title="Votre catalogue est vide" message="Ajoutez une référence pour commencer à vendre." actionLabel="Ajouter un produit" onAction={() => navigate("/products/new")} />
+              {criticalProducts.length === 0 ? (
+                <div className="py-6 text-center text-xs text-[#6e7a72]">
+                  Tous les stocks sont à un niveau optimal.
+                </div>
               ) : (
                 <div className="flex flex-col">
-                  {products.filter((product) => product.stockQuantity <= product.alertThreshold).slice(0, 6).map((product) => (
+                  {criticalProducts.map((product) => (
                     <ProductRow key={product.id} product={product} />
                   ))}
                 </div>

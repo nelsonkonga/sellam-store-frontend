@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getShops, createShop, uploadShopLogo } from "../services/shopService";
-import { getTodaySales } from "../services/saleService";
-import { listEmployees } from "../services/employeeService";
+import { getShopsSummaries, getShops, createShop, uploadShopLogo } from "../services/shopService";
 import { useShop } from "../context/ShopContext";
 import ShopCard from "../components/ShopCard";
 import Modal from "../components/Modal";
@@ -32,31 +30,15 @@ export default function ShopsPage() {
       setError("");
       setLoading(true);
       try {
-        const data = await getShops();
-        const enrichedShops = await Promise.all(data.map(async (shop) => {
-          const [salesResult, employeesResult] = await Promise.allSettled([
-            getTodaySales(shop.id),
-            listEmployees(shop.id),
-          ]);
-          const sales = salesResult.status === "fulfilled" && Array.isArray(salesResult.value)
-            ? salesResult.value
-            : [];
-          const employees = employeesResult.status === "fulfilled" && Array.isArray(employeesResult.value)
-            ? employeesResult.value
-            : [];
-          const totalSales = sales.reduce((sum, sale) => sum + Number(sale.totalPrice || 0), 0);
-          const totalMargin = sales.reduce((sum, sale) => sum + Number(sale.margin || 0), 0);
-
-          return {
-            ...shop,
-            salesToday: totalSales,
-            margin: totalSales > 0 ? `${Math.round((totalMargin / totalSales) * 100)} %` : "—",
-            teamCount: employees.length,
-          };
-        }));
-        setShops(enrichedShops);
+        const data = await getShopsSummaries();
+        setShops(data);
       } catch (err) {
-        setError("Impossible de charger vos boutiques. Réessayez plus tard.");
+        try {
+          const fallbackData = await getShops();
+          setShops(fallbackData.map((s) => ({ ...s, salesToday: 0, margin: "—", teamCount: 0 })));
+        } catch {
+          setError("Impossible de charger vos boutiques. Réessayez plus tard.");
+        }
       } finally {
         setLoading(false);
       }
@@ -66,21 +48,8 @@ export default function ShopsPage() {
 
   function retryFetchShops() {
     setLoading(true);
-    getShops()
-      .then(async (data) => {
-        const enrichedShops = await Promise.all(data.map(async (shop) => {
-          const [salesResult, employeesResult] = await Promise.allSettled([
-            getTodaySales(shop.id),
-            listEmployees(shop.id),
-          ]);
-          const sales = salesResult.status === "fulfilled" && Array.isArray(salesResult.value) ? salesResult.value : [];
-          const employees = employeesResult.status === "fulfilled" && Array.isArray(employeesResult.value) ? employeesResult.value : [];
-          const totalSales = sales.reduce((sum, sale) => sum + Number(sale.totalPrice || 0), 0);
-          const totalMargin = sales.reduce((sum, sale) => sum + Number(sale.margin || 0), 0);
-          return { ...shop, salesToday: totalSales, margin: totalSales > 0 ? `${Math.round((totalMargin / totalSales) * 100)} %` : "—", teamCount: employees.length };
-        }));
-        setShops(enrichedShops);
-      })
+    getShopsSummaries()
+      .then((data) => setShops(data))
       .catch(() => setError("Impossible de charger vos boutiques. Réessayez."))
       .finally(() => setLoading(false));
   }

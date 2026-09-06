@@ -61,9 +61,16 @@ export default function AuthPage({ mode: initialMode = MODES.LOGIN }) {
           <div className="mb-8"><h1 className="font-display text-3xl font-semibold text-[#006547]">Sellam</h1><p className="mt-2 text-base text-[#3e4943]">{isLogin ? "Connectez-vous pour accéder à votre espace de gestion." : "Créez votre espace de gestion commerciale."}</p></div>
           {authMessage && <div className="mb-4 rounded-lg border border-[#ffddb9] bg-[#fff8f1] px-3 py-2 text-sm text-[#7d4d00]">{authMessage}</div>}
           {error && <div role="alert" className="mb-4 rounded-lg border border-[#e9aaa2] bg-[#fff0ee] px-3 py-2 text-sm text-[#93000a]">{error}</div>}
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5 w-full max-w-full block">
             {!isLogin && <FormField id="name" label="Nom complet" value={form.name} onChange={update} placeholder="Ex: Amina Traoré" autoComplete="name" />}
-            {isLogin ? <IconField id="identifier" label="Email ou Téléphone" value={form.identifier} onChange={update} placeholder="nom@entreprise.com" autoComplete="username" icon={UserRound} /> : <><PhoneNumberInput label="Numéro de téléphone" value={form.phoneNumber} onChange={handlePhoneChange} placeholder="690000000" /><FormField id="email" label="Adresse Email" type="email" value={form.email} onChange={update} placeholder="nom@entreprise.com" autoComplete="email" /></>}
+            {isLogin ? (
+  <IconField id="identifier" label="Email ou Téléphone" value={form.identifier} onChange={update} placeholder="nom@entreprise.com" autoComplete="username" icon={UserRound} />
+) : (
+  <div className="flex flex-col gap-5 w-full max-w-full">
+    <PhoneNumberInput label="Numéro de téléphone" value={form.phoneNumber} onChange={handlePhoneChange} placeholder="690000000" />
+    <FormField id="email" label="Adresse Email" type="email" value={form.email} onChange={update} placeholder="nom@entreprise.com" autoComplete="email" />
+  </div>
+)}
             <IconField id="password" label="Mot de passe" type={showPassword ? "text" : "password"} value={form.password} onChange={update} placeholder="••••••••" autoComplete={isLogin ? "current-password" : "new-password"} icon={LockKeyhole} trailing={<button type="button" aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"} onClick={() => setShowPassword(!showPassword)} className="text-[#6e7a72] hover:text-[#006547]">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>} />
             {isLogin && <div className="flex justify-end"><Link to="/forgot-password" className="text-sm text-[#006547] hover:underline">Mot de passe oublié ?</Link></div>}
             <button type="submit" disabled={loading} className="flex h-12 w-full items-center justify-center rounded-lg bg-[#12805c] px-4 text-base font-bold text-white shadow-sm transition hover:bg-[#006547] disabled:opacity-60">{loading ? "Veuillez patienter..." : isLogin ? "Se connecter" : "Créer mon compte"}</button>

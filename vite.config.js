@@ -101,7 +101,11 @@ export default defineConfig({
       }
     })
   ],
-  server: {
-    allowedHosts: ['.ngrok-free.dev']
-  }
+server: {
+    allowedHosts: ['.ngrok-free.dev'],
+    hmr: {
+      protocol: 'ws',
+      host: 'localhost',
+    },
+  },
 });

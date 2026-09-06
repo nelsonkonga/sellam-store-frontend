@@ -56,7 +56,6 @@ export default function PhoneNumberInput({
   }, [value]);
 
   const handleNumberChange = (newLocal, newCountry = selectedCountry) => {
-    // Supprime tout espace ou caractère non numérique saisi par l'utilisateur
     const sanitized = newLocal.replace(/\D/g, "");
     setLocalNumber(sanitized);
     const e164 = sanitized ? `${newCountry.dialCode}${sanitized}` : "";
@@ -72,34 +71,35 @@ export default function PhoneNumberInput({
   };
 
   return (
-    <div className="space-y-1.5 text-left">
+    <div className="space-y-1.5 text-left w-full">
       {label && (
         <label className="block text-sm font-medium text-[#3e4943]">
           {label}
         </label>
       )}
 
-      <div className="flex gap-2">
-        {/* Sélecteur de pays */}
-        <div className="relative w-36 shrink-0">
+      <div className="flex w-full gap-2">
+        {/* Sélecteur de pays - Largeur réduite et optimisée pour mobile */}
+        <div className="relative w-[105px] shrink-0">
           <button
             type="button"
             onClick={() => setShowDropdown(!showDropdown)}
             disabled={disabled}
-            className={`w-full rounded-xl border px-3 py-3 text-left text-sm font-medium
+            className={`w-full rounded-xl border pl-2.5 pr-1.5 py-3 text-left text-sm font-medium
                        transition flex items-center justify-between bg-white text-[#141e1a]
                        ${error ? "border-red-500 focus:ring-1 focus:ring-red-500" : "border-[#bdc9c1] focus:border-[#12805c]"}
                        ${disabled ? "opacity-50 cursor-not-allowed bg-gray-100" : "hover:bg-[#ebf6ef]"}`}
           >
-            <span className="flex items-center gap-2">
+            <span className="flex items-center gap-1.5 min-w-0">
+              {/* Correction de l'URL du drapeau (ajout du $) */}
               <img 
-                src={`https://flagcdn.com{selectedCountry.code.toLowerCase()}.png`} 
+                src={`https://flagcdn.com/${selectedCountry.code.toLowerCase()}.png`} 
                 alt="" 
-                className="w-5 h-3.5 object-cover rounded-sm border border-gray-100" 
+                className="w-5 h-3.5 object-cover rounded-sm border border-gray-100 shrink-0" 
               /> 
-              <span>{selectedCountry.dialCode}</span>
+              <span className="truncate text-xs sm:text-sm">{selectedCountry.dialCode}</span>
             </span>
-            <ChevronDown size={16} className="text-[#6e7a72]" />
+            <ChevronDown size={14} className="text-[#6e7a72] shrink-0 ml-0.5" />
           </button>
 
           {showDropdown && (
@@ -118,8 +118,9 @@ export default function PhoneNumberInput({
                                 : "text-[#141e1a]"
                             }`}
                 >
+                  {/* Correction de l'URL du drapeau (ajout du $) */}
                   <img 
-                    src={`https://flagcdn.com{country.code.toLowerCase()}.png`} 
+                    src={`https://flagcdn.com/${country.code.toLowerCase()}.png`} 
                     alt="" 
                     className="w-5 h-3.5 object-cover rounded-sm border border-gray-100 shrink-0" 
                   />
@@ -131,14 +132,14 @@ export default function PhoneNumberInput({
           )}
         </div>
 
-        {/* Champ numéro local */}
+        {/* Champ numéro local - Ajusté avec min-w-0 pour fléchir correctement */}
         <input
           type="tel"
           value={localNumber}
           onChange={(e) => handleNumberChange(e.target.value)}
           placeholder={placeholder}
           disabled={disabled}
-          className={`flex-1 rounded-xl border px-4 py-3 text-base bg-white text-[#141e1a]
+          className={`flex-1 min-w-0 rounded-xl border px-3 py-3 text-base bg-white text-[#141e1a]
                      placeholder:text-[#6e7a72] transition focus:outline-none
                      ${
                        error

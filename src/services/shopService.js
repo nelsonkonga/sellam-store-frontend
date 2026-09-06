@@ -10,6 +10,15 @@ export async function getShops() {
 }
 
 /**
+ * Récupère la liste des boutiques du compte connecté avec les résumés agrégés (ventes du jour, marge, effectif).
+ * @returns {Promise<Array<{ id: string, name: string, address: string, logoUrl: string, salesToday: number, margin: string, teamCount: number }>>}
+ */
+export async function getShopsSummaries() {
+  const response = await api.get("/shops/summaries");
+  return response.data;
+}
+
+/**
  * Crée une nouvelle boutique pour le compte connecté.
  * @param {{ name: string, address: string, logoUrl?: string }} data
  * @returns {Promise<{ id: string, name: string, address: string, logoUrl: string }>}
