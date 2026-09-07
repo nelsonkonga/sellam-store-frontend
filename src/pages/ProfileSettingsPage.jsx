@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { LogOut, Users, Clock, ChevronRight, Store, Save, PencilLine, PencilOff } from "lucide-react";
+import { LogOut, Users, Clock, ChevronRight, Store, Save, PencilLine, PencilOff,Gift } from "lucide-react";
 import { updateThemePreference, updateProfilePicture, getCanChangeEmail, getCanChangePhone, changeEmail, changePhone } from "../services/profileService";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import ProfilePictureUpload from "../components/ProfilePictureUpload";
 import ThemeSelector from "../components/ThemeSelector";
-import BottomNav from "../components/BottomNav";
 import { useShop } from "../context/ShopContext.jsx";
 
 export default function ProfileSettingsPage() {
@@ -312,6 +311,24 @@ export default function ProfileSettingsPage() {
           )}
 
           <Link
+              to="/referrals"
+              className="flex items-center gap-3 rounded-2xl glass p-5 shadow-sm transition hover:shadow-md"
+          >
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-500/10 text-brand-400">
+              <Gift size={18} />
+            </div>
+            <div className="flex-1">
+              <p className="font-medium text-white">
+                Parrainage
+              </p>
+              <p className="text-xs text-gray-400">
+                Invitez et gagnez des jours d'abonnement offerts
+              </p>
+            </div>
+            <ChevronRight size={18} className="text-gray-500" />
+          </Link>
+
+          <Link
               to="/settings/shop"
               className="flex items-center gap-3 rounded-2xl glass p-5 shadow-sm transition hover:shadow-md"
           >
@@ -342,7 +359,7 @@ export default function ProfileSettingsPage() {
           </button>
         </main>
 
-        <BottomNav />
+        
       </div>
   );
 }

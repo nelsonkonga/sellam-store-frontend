@@ -13,7 +13,7 @@ export default function FormField({
   required = true,
 }) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-1.5 w-full min-w-0">
       <label
         htmlFor={id}
         className="text-sm font-medium text-[#3e4943]"
@@ -29,7 +29,7 @@ export default function FormField({
         placeholder={placeholder}
         autoComplete={autoComplete}
         required={required}
-        className="w-full rounded-lg border border-[#bdc9c1] bg-white px-4 py-3 text-base
+        className="w-full min-w-0 rounded-lg border border-[#bdc9c1] bg-white px-4 py-3 text-base
              text-[#141e1a] placeholder-[#6e7a72] shadow-sm outline-none
              transition focus:border-[#12805c] focus:ring-2 focus:ring-[#12805c]/30"
       />

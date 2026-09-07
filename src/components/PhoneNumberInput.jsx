@@ -71,31 +71,31 @@ export default function PhoneNumberInput({
   };
 
   return (
-    <div className="space-y-1.5 text-left w-full">
+    <div className="space-y-1.5 text-left w-full min-w-0">
       {label && (
         <label className="block text-sm font-medium text-[#3e4943]">
           {label}
         </label>
       )}
 
-      <div className="flex w-full gap-2">
-        {/* Sélecteur de pays - Largeur réduite et optimisée pour mobile */}
-        <div className="relative w-[105px] shrink-0">
+      <div className="flex w-full min-w-0 gap-2">
+        {/* Sélecteur de pays - Largeur optimisée pour mobile et desktop */}
+        <div className="relative w-[90px] sm:w-[105px] shrink-0">
           <button
             type="button"
             onClick={() => setShowDropdown(!showDropdown)}
             disabled={disabled}
-            className={`w-full rounded-xl border pl-2.5 pr-1.5 py-3 text-left text-sm font-medium
+            className={`w-full rounded-xl border px-2 sm:pl-2.5 sm:pr-1.5 py-3 text-left text-sm font-medium
                        transition flex items-center justify-between bg-white text-[#141e1a]
                        ${error ? "border-red-500 focus:ring-1 focus:ring-red-500" : "border-[#bdc9c1] focus:border-[#12805c]"}
                        ${disabled ? "opacity-50 cursor-not-allowed bg-gray-100" : "hover:bg-[#ebf6ef]"}`}
           >
-            <span className="flex items-center gap-1.5 min-w-0">
+            <span className="flex items-center gap-1 sm:gap-1.5 min-w-0">
               {/* Correction de l'URL du drapeau (ajout du $) */}
               <img 
                 src={`https://flagcdn.com/${selectedCountry.code.toLowerCase()}.png`} 
                 alt="" 
-                className="w-5 h-3.5 object-cover rounded-sm border border-gray-100 shrink-0" 
+                className="w-4 h-3 sm:w-5 sm:h-3.5 object-cover rounded-sm border border-gray-100 shrink-0" 
               /> 
               <span className="truncate text-xs sm:text-sm">{selectedCountry.dialCode}</span>
             </span>
@@ -132,14 +132,14 @@ export default function PhoneNumberInput({
           )}
         </div>
 
-        {/* Champ numéro local - Ajusté avec min-w-0 pour fléchir correctement */}
+        {/* Champ numéro local - w-0 flex-1 min-w-0 pour empêcher tout débordement sur mobile */}
         <input
           type="tel"
           value={localNumber}
           onChange={(e) => handleNumberChange(e.target.value)}
           placeholder={placeholder}
           disabled={disabled}
-          className={`flex-1 min-w-0 rounded-xl border px-3 py-3 text-base bg-white text-[#141e1a]
+          className={`w-0 flex-1 min-w-0 rounded-xl border px-3 py-3 text-base bg-white text-[#141e1a]
                      placeholder:text-[#6e7a72] transition focus:outline-none
                      ${
                        error
@@ -152,7 +152,7 @@ export default function PhoneNumberInput({
 
       {/* Libellé de confirmation */}
       {localNumber && (
-        <p className="text-xs text-[#6e7a72] pl-1 animate-fadeIn">
+        <p className="text-xs text-[#6e7a72] pl-1 truncate animate-fadeIn">
           Format international : <span className="font-semibold font-mono text-[#006547]">{selectedCountry.dialCode} {localNumber}</span>
         </p>
       )}

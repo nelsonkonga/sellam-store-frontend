@@ -5,6 +5,7 @@ import { ShopProvider } from "./context/ShopContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { ProductsProvider } from "./context/ProductsContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ReferralPage from "./services/ReferralPage.jsx";
 
 import AuthPage from "./pages/AuthPage";
 import LoginPage from "./pages/LoginPage";
@@ -34,6 +35,9 @@ import CashRegistersPage from "./pages/CashRegistersPage.jsx";
 import CashSessionPage from "./pages/CashSessionPage.jsx";
 import CashHistoryPage from "./pages/CashHistoryPage.jsx";
 import MembershipsPage from "./pages/MembershipsPage.jsx";
+import SubscriptionPage from "./pages/SubscriptionPage";
+import TermsPage from "./pages/TermsPage.jsx";
+import PrivacyPage from "./pages/PrivacyPage.jsx";
 
 export default function App() {
     useAutoSync();
@@ -52,6 +56,8 @@ export default function App() {
                                 <Route path="/login" element={<LoginPage/>}/>
                                 <Route path="/register" element={<RegisterPage/>}/>
                                 <Route path="/forgot-password" element={<ForgotPasswordPage/>}/>
+                                <Route path="/privacy" element={<PrivacyPage/>}/>
+                                <Route path="/terms" element={<TermsPage/>}/>
                                 <Route path="/oauth-callback" element={<OAuthCallbackPage/>}/>
                                 <Route path="/oauth-error" element={<OAuthErrorPage/>}/>
                                 <Route path="/verify-email" element={<VerifyEmailPage/>}/>
@@ -189,6 +195,25 @@ export default function App() {
                                         </ProtectedRoute>
                                     }
                                 />
+
+                                <Route 
+                                    path="/subscription" 
+                                    element={
+                                        <ProtectedRoute>
+                                            <SubscriptionPage/>
+                                        </ProtectedRoute>
+                                    } 
+                                />
+
+                                <Route
+                                    path="/referrals"
+                                    element={
+                                        <ProtectedRoute>
+                                            <ReferralPage/>
+                                        </ProtectedRoute>
+                                    }
+                                />
+                                
 
                                 {/* Support routes */}
                                 <Route path="/support" element={<ProtectedRoute requireShop={false}><UserSupportPage/></ProtectedRoute>} />

@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useShop } from "../context/ShopContext";
 import { listRegisters, getCashStatus, createRegister } from "../services/cashService";
-import BottomNav from "../components/BottomNav";
 import { ArrowLeft, Landmark, TrendingDown, Store } from "lucide-react";
 
 const currencyFormatter = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "XAF", maximumFractionDigits: 0 });
@@ -250,7 +249,7 @@ export default function CashRegistersPage() {
         </div>
       )}
 
-      <BottomNav />
+      
     </div>
   );
 }

@@ -12,7 +12,7 @@ import {
 import { useShop } from "../context/ShopContext";
 import { useAuth } from "../context/AuthContext";
 import PhoneNumberInput from "../components/PhoneNumberInput";
-import BottomNav from "../components/BottomNav";
+
 
 const ROLES = [
   { value: "MANAGER", label: "Gérant", icon: ShieldCheck, color: "text-emerald-400" },
@@ -560,7 +560,7 @@ export default function EmployeesPage() {
         </div>
       )}
 
-      <BottomNav />
+      
     </div>
   );
 }

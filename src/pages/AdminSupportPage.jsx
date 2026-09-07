@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import supportService from '../services/supportService';
-import { Shield, Search, Unlock, MessageSquare, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { Shield, Search, Unlock, MessageSquare, CheckCircle, Clock, AlertTriangle, CreditCard } from 'lucide-react';
+import ManualSubscriptionActivationModal from '../components/ManualSubscriptionActivationModal';
 
 export default function AdminSupportPage() {
   const [tickets, setTickets] = useState([]);
@@ -11,6 +12,7 @@ export default function AdminSupportPage() {
   
   // Reset limit modal
   const [showResetModal, setShowResetModal] = useState(false);
+  const [showActivationModal, setShowActivationModal] = useState(false);
   const [resetUserId, setResetUserId] = useState('');
   const [resetReason, setResetReason] = useState('');
   const [resetTicketId, setResetTicketId] = useState('');
@@ -112,6 +114,7 @@ export default function AdminSupportPage() {
           <Shield className="w-7 h-7 text-primary" />
           <div><p className="text-xs font-bold uppercase tracking-[0.08em] text-[#006547]">Espace sécurisé</p><h1 className="font-display text-3xl font-bold text-text-primary">Administration Support</h1></div>
         </div>
+          <div className="flex items-center gap-3">
         <button
           onClick={() => setShowResetModal(true)}
           className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
@@ -119,6 +122,15 @@ export default function AdminSupportPage() {
           <Unlock className="w-5 h-5" />
           Débloquer limite identité
         </button>
+
+        <button
+          onClick={() => setShowActivationModal(true)}
+          className="flex items-center gap-2 bg-primary hover:opacity-90 text-white px-4 py-2 rounded-lg transition-colors"
+        >
+          <CreditCard className="w-5 h-5" />
+          Activer abonnement manuel
+        </button>
+      </div>
       </div>
 
       {error && (
@@ -283,7 +295,22 @@ export default function AdminSupportPage() {
             )}
           </div>
         </div>
+
+
       )}
+
+      {showActivationModal && (
+        <ManualSubscriptionActivationModal
+          onClose={(didActivate) => {
+            setShowActivationModal(false);
+            // Pas de rechargement de tickets nécessaire ici : l'activation
+            // d'abonnement n'affecte pas la liste des tickets affichée sur
+            // cette page. Si vous ajoutez plus tard un tableau de bord
+            // "abonnements" sur cette même page, rechargez-le ici.
+          }}
+        />
+      )}
+
     </div>
   );
 }

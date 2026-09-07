@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useShop } from "../context/ShopContext";
 import { listRegisters, getSessionDetail, openSession, closeSession, regularizeSession, addMovement } from "../services/cashService";
-import BottomNav from "../components/BottomNav";
 import { ArrowLeft } from "lucide-react";
 
 const currencyFormatter = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "XAF", maximumFractionDigits: 0 });
@@ -173,7 +172,7 @@ export default function CashSessionPage() {
         <div className="mx-auto max-w-7xl px-5 py-2 md:px-8 lg:px-10">
           <p className="text-center text-sm text-[#6e7a72] py-10">Chargement...</p>
         </div>
-        <BottomNav />
+        
       </div>
     );
   }
@@ -401,7 +400,7 @@ export default function CashSessionPage() {
         )}
       </div>
 
-      <BottomNav />
+      
     </div>
   );
 }

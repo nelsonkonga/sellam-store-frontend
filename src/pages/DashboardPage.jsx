@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Wallet, TrendingUp, AlertTriangle, Plus, ShoppingBag, Cloud } from "lucide-react";
+import { Wallet, TrendingUp, AlertTriangle, Plus, ShoppingBag, Cloud, Clock } from "lucide-react";
 import { getDashboardData } from "../services/dashboardService";
 import { getNotifications } from "../services/notificationService";
 import { getCashStatus } from "../services/cashService";
@@ -9,10 +9,10 @@ import { useShop } from "../context/ShopContext";
 import DashboardHeader from "../components/DashboardHeader";
 import SummaryCard from "../components/SummaryCard";
 import ProductRow from "../components/ProductRow";
-import BottomNav from "../components/BottomNav";
 import OfflineBanner from "../components/OfflineBanner";
 import ErrorState from "../components/ErrorState";
 import EmptyState from "../components/EmptyState";
+
 
 // Formatteur de montant en Francs CFA (adapte facilement à une autre devise si besoin)
 const currencyFormatter = new Intl.NumberFormat("fr-FR", {
@@ -118,6 +118,7 @@ export default function DashboardPage() {
       />
 
       <main className="mx-auto max-w-7xl px-5 py-2 md:px-8 lg:px-10">
+        
         {routeMessage && (
           <div className="mt-4 rounded-xl border border-[#ffddb9] bg-[#fff8f1] px-4 py-3 text-sm text-[#7d4d00]" role="alert">
             {routeMessage}
@@ -174,7 +175,7 @@ export default function DashboardPage() {
   <div className="mb-5 flex items-center justify-between border-b border-[#f1fcf5] pb-3">
     <div className="flex items-center gap-2">
       {/* Icône d'horloge pour ancrer l'aspect temporel */}
-      <svg xmlns="http://w3.org" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#006547" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" class="lucide lucide-clock"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <Clock size={18} color="#006547" strokeWidth={2} />
       <h2 className="font-display text-base font-bold text-[#141e1a]">Timeline : depuis l'ouverture</h2>
     </div>
     <span className="rounded-full bg-[#ebf6ef] px-2.5 py-0.5 text-xs font-semibold text-[#006547]">Aujourd'hui</span>
@@ -279,7 +280,7 @@ export default function DashboardPage() {
         <Plus size={28} />
       </button>
 
-      <BottomNav />
+      
     </div>
   );
 }

@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useShop } from "../context/ShopContext";
 import api from "../services/api";
-import BottomNav from "../components/BottomNav";
 import { ArrowLeft, Download, Mail, X} from "lucide-react";
 
 const currencyFormatter = new Intl.NumberFormat("fr-FR", {
@@ -731,7 +730,7 @@ export default function ReportsPage() {
                 )}
             </div>
 
-            <BottomNav />
+            
         </div>
     );
 }

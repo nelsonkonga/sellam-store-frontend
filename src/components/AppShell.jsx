@@ -7,6 +7,7 @@ import {
   Package, 
   Settings, 
   ShoppingCart, 
+  CreditCard,
   Store, 
   Users, 
   Receipt,   // Pour les Rapports (Factures/Stats)
@@ -16,6 +17,9 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { useShop } from "../context/ShopContext";
 import SyncStatus from "./SyncStatus";
+import WelcomeTrialModal from "./WelcomeTrialModal";
+import SubscriptionWarningBanner from "./SubscriptionWarningBanner";
+import BottomNav from "./BottomNav";
 
 const operationalLinks = [
   ["/dashboard", "Aujourd'hui", LayoutDashboard],
@@ -30,6 +34,7 @@ const managementLinks = [
   ["/cash", "Caisses", Wallet, true],
   ["/employees", "Équipe", Users, true],
   ["/memberships", "Membres et accès", UserCheck, true],
+  ["/subscription", "Abonnement", CreditCard],
 ];
 
 function ShellLink({ to, label, Icon }) {
@@ -61,22 +66,25 @@ export default function AppShell({ children }) {
 
   return (
     <div className="min-h-screen bg-[var(--bg-page)] text-[var(--text-primary)]">
+      {/* Modale de bienvenue affichée une seule fois juste après l'inscription,
+          montée ici (haut de l'arbre) pour être disponible sur toutes les pages
+          protégées sans avoir à la répéter page par page. */}
+      <WelcomeTrialModal />
+
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-[248px] flex-col overflow-y-auto border-r border-[var(--border-soft)] bg-white px-4 py-6 lg:flex">
         <button type="button" onClick={() => navigate("/dashboard")} className="mb-7 flex items-center gap-3 px-2 text-left">
           <img 
-  src="/sellam-logo.png" 
-  alt="Logo Sellam" 
-  className="h-8 w-8 object-contain" 
-  onError={(e) => {
+   src="/sellam-logo.png" 
+   alt="Logo Sellam" 
+   className="h-8 w-8 object-contain"
+   onError={(e) => {
     // Sécurité : si l'image ne charge pas, on remet le macaron vert "S"
     e.currentTarget.style.display = 'none';
     const fallback = document.createElement('span');
     fallback.className = "flex h-8 w-8 items-center justify-center rounded-full bg-[#12805c] text-lg font-bold text-white";
     fallback.innerText = "S";
     e.currentTarget.parentNode.insertBefore(fallback, e.currentTarget);
-  }}
-/>
-
+  }} />
           <span>
             <strong className="block font-display text-lg font-bold text-[#006547]">Sellam</strong>
             <span className="block text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--text-muted)]">Gestion de Boutiques</span>
@@ -122,8 +130,12 @@ export default function AppShell({ children }) {
         <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 lg:hidden dark:border-amber-900/50 dark:bg-amber-950/30">
           <SyncStatus />
         </div>
+        {/* Bandeau d'état d'abonnement (essai en cours, avertissement),
+            affiché en haut du contenu principal sur toutes les pages. */}
+        <SubscriptionWarningBanner />
         <div key={location.pathname} className="min-h-screen animate-fade-in-up">{children}</div>
       </main>
+      <BottomNav />
     </div>
   );
 }

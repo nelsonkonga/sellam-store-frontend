@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useShop } from "../context/ShopContext";
 import { listSessions } from "../services/cashService";
-import BottomNav from "../components/BottomNav";
+
 
 const currencyFormatter = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "XAF", maximumFractionDigits: 0 });
 const dateFormatter = new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -208,7 +208,7 @@ export default function CashHistoryPage() {
         )}
       </div>
 
-      <BottomNav />
+      
     </div>
   );
 }

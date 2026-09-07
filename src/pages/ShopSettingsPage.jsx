@@ -4,7 +4,7 @@ import { Upload, AlertCircle, CheckCircle2, Printer } from "lucide-react";
 import { useShop } from "../context/ShopContext";
 import { updateShopSettings, uploadShopLogo } from "../services/shopService";
 import PhoneNumberInput from "../components/PhoneNumberInput";
-import BottomNav from "../components/BottomNav";
+
 
 export default function ShopSettingsPage() {
   const navigate = useNavigate();
@@ -349,7 +349,7 @@ export default function ShopSettingsPage() {
         </div>
       </main>
 
-      <BottomNav />
+      
     </div>
   );
 }

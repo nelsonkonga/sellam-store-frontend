@@ -59,7 +59,21 @@ api.interceptors.response.use(
         }
         return Promise.reject(error);
       }
-      
+
+      // Abonnement expiré : le backend bloque les actions d'écriture avec
+      // un 403 + error: "SUBSCRIPTION_EXPIRED" (cf. SubscriptionAccessFilter).
+      // On redirige vers la page d'abonnement plutôt que de laisser l'appelant
+      // afficher une erreur brute ou un échec silencieux. On ne redirige que
+      // si on n'est pas déjà sur /subscription, pour ne pas boucler (la route
+      // de paiement elle-même reste exemptée côté backend, mais par prudence
+      // on évite aussi toute redirection en boucle côté client).
+      if (error.response?.status === 403 && error.response?.data?.error === "SUBSCRIPTION_EXPIRED") {
+        if (window.location.pathname !== "/subscription") {
+          window.location.href = "/subscription?reason=expired";
+        }
+        return Promise.reject(error);
+      }
+
       // Detect offline / network failure
       const isNetworkError = !error.response 
           || error.code === 'ERR_NETWORK' 

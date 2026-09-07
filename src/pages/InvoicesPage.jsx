@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Search, FileText, Filter, ChevronLeft, ChevronRight, CheckCircle2 } from "lucide-react";
 import { listInvoices } from "../services/invoiceService";
 import { useShop } from "../context/ShopContext";
-import BottomNav from "../components/BottomNav";
 import ErrorState from "../components/ErrorState";
 import EmptyState from "../components/EmptyState";
 import SyncStatus from "../components/SyncStatus";
@@ -98,7 +97,7 @@ export default function InvoicesPage() {
                 )}
             </main>
 
-            <BottomNav />
+            
         </div>
     );
 }

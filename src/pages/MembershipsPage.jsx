@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Users, Shield, ToggleLeft, ToggleRight, Trash2, X, Save } from "lucide-react";
 import { useShop } from "../context/ShopContext";
 import { getMembershipByShop, updateMembershipRole, toggleMembershipActive, deleteMembership, updateMembershipPermissions } from "../services/identityService";
-import BottomNav from "../components/BottomNav";
+
 
 const ROLES = [
   { value: "MANAGER", label: "Gérant" },
@@ -227,7 +227,7 @@ export default function MembershipsPage() {
         </div>
       )}
 
-      <BottomNav />
+      
     </div>
   );
 }

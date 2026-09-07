@@ -41,10 +41,10 @@ export default function PasswordStrengthIndicator({ password }) {
           {strength.reqMet}/5 critères
         </span>
       </div>
-      <ul className="grid grid-cols-2 gap-1 text-xs text-gray-500 dark:text-gray-400">
+      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-xs text-gray-500 dark:text-gray-400">
         {requirements.map((req, i) => (
-          <li key={i} className={`flex items-center gap-1 ${req.met ? 'text-green-500 dark:text-green-400' : ''}`}>
-            {req.met ? '✓' : '○'} {req.label}
+          <li key={i} className={`flex items-center gap-1 min-w-0 truncate ${req.met ? 'text-green-500 dark:text-green-400' : ''}`}>
+            <span className="shrink-0">{req.met ? '✓' : '○'}</span> <span className="truncate">{req.label}</span>
           </li>
         ))}
       </ul>

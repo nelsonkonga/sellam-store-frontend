@@ -5,7 +5,7 @@ import {
   saveBalanceSetting,
 } from "../services/balanceSettingsService";
 import { useShop } from "../context/ShopContext";
-import BottomNav from "../components/BottomNav";
+
 
 const DAYS = [
   { key: "MONDAY", label: "Lundi" },
@@ -222,7 +222,7 @@ export default function BalanceSettingsPage() {
         )}
       </div>
 
-      <BottomNav />
+      
     </div>
   );
 }
