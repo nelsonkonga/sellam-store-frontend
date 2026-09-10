@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, FileText, Filter, ChevronLeft, ChevronRight, CheckCircle2 } from "lucide-react";
+import { Search, FileText, Filter, ChevronLeft, ChevronRight, CheckCircle2, Clock } from "lucide-react";
 import { listInvoices } from "../services/invoiceService";
 import { useShop } from "../context/ShopContext";
+import { usePendingInvoices } from "../hooks/usePendingInvoices";
 import ErrorState from "../components/ErrorState";
 import EmptyState from "../components/EmptyState";
 import SyncStatus from "../components/SyncStatus";
@@ -21,6 +22,7 @@ export default function InvoicesPage() {
 
     const navigate = useNavigate();
     const { selectedShopId: shopId } = useShop();
+    const { pendingInvoices, refresh: refreshPending } = usePendingInvoices(shopId);
 
     useEffect(() => {
         if (!shopId) {
@@ -34,22 +36,40 @@ export default function InvoicesPage() {
                 const data = await listInvoices(shopId);
                 setInvoices(data);
             } catch (err) {
-                setError("Impossible de charger l'historique des factures.");
+                // Si le serveur est injoignable (hors ligne), on ne bloque pas l'affichage :
+                // les factures en attente locales restent visibles même sans réponse serveur.
+                if (!navigator.onLine) {
+                    setInvoices([]);
+                } else {
+                    setError("Impossible de charger l'historique des factures.");
+                }
             } finally {
                 setLoading(false);
             }
         }
         fetchInvoices();
-    }, [shopId, navigate]);
+        // On rafraîchit aussi les factures en attente à chaque changement de boutique,
+        // et on les re-vérifie périodiquement pour refléter une synchronisation réussie
+        // (une pendingAction synchronisée disparaît de la liste "en attente").
+        refreshPending();
+        const interval = setInterval(refreshPending, 5000);
+        return () => clearInterval(interval);
+    }, [shopId, navigate, refreshPending]);
 
     function retryInvoices() {
         if (!shopId) return;
         setLoading(true);
         setError("");
         listInvoices(shopId).then(setInvoices).catch(() => setError("Impossible de charger l'historique des factures.")).finally(() => setLoading(false));
+        refreshPending();
     }
 
-    const filteredInvoices = invoices.filter((inv) => {
+    // Les factures en attente locales sont fusionnées en tête de liste, avant les
+    // factures déjà confirmées par le serveur -- elles disparaîtront naturellement
+    // d'ici une fois synchronisées (remplacées par leur équivalent serveur).
+    const combinedInvoices = [...pendingInvoices, ...invoices];
+
+    const filteredInvoices = combinedInvoices.filter((inv) => {
         const term = search.toLowerCase();
         return (
             inv.invoiceNumber?.toLowerCase().includes(term) ||
@@ -63,7 +83,12 @@ export default function InvoicesPage() {
                 <div className="mx-auto flex max-w-7xl items-end justify-between gap-4">
                 <div><p className="mb-2 text-xs font-bold uppercase tracking-[0.08em] text-[#006547]">Historique</p>
                 <h1 className="flex items-center gap-2 font-display text-3xl font-semibold tracking-tight">
-                    <FileText className="text-[#006547]" size={28} /> Factures <span className="rounded-full bg-[#dfebe4] px-2 py-1 text-xs font-bold text-[#3e4943]">{invoices.length} total</span>
+                    <FileText className="text-[#006547]" size={28} /> Factures <span className="rounded-full bg-[#dfebe4] px-2 py-1 text-xs font-bold text-[#3e4943]">{combinedInvoices.length} total</span>
+                    {pendingInvoices.length > 0 && (
+                        <span className="rounded-full bg-[#fdf0dc] px-2 py-1 text-xs font-bold text-[#9f6300]">
+                            {pendingInvoices.length} en attente
+                        </span>
+                    )}
                 </h1>
                 <p className="mt-1 text-base text-[#3e4943]">Consultez et gérez vos ventes validées.</p></div>
                 <div className="hidden md:block"><SyncStatus /></div>
@@ -91,9 +116,9 @@ export default function InvoicesPage() {
                 ) : error ? (
                     <ErrorState title="Historique indisponible" message={error} onRetry={retryInvoices} />
                 ) : filteredInvoices.length === 0 ? (
-                    <EmptyState title={invoices.length === 0 ? "Aucune facture" : "Aucun résultat"} message={invoices.length === 0 ? "Les ventes validées apparaîtront ici." : "Modifiez votre recherche pour retrouver une facture."} />
+                    <EmptyState title={combinedInvoices.length === 0 ? "Aucune facture" : "Aucun résultat"} message={combinedInvoices.length === 0 ? "Les ventes validées apparaîtront ici." : "Modifiez votre recherche pour retrouver une facture."} />
                 ) : (
-                    <div className="overflow-x-auto rounded-lg border border-[#bdc9c1] bg-white"><table className="w-full min-w-[760px] border-collapse text-left"><thead className="border-b border-[#bdc9c1] bg-[#ebf6ef]"><tr>{["Invoice #", "Client", "Montant (FCFA)", "Marge", "Date & Heure", "Statut"].map((heading) => <th key={heading} className="px-4 py-3 text-[10px] font-bold uppercase tracking-[0.06em] text-[#3e4943]">{heading}</th>)}</tr></thead><tbody>{filteredInvoices.map((invoice) => <tr key={invoice.id} onClick={() => navigate(`/invoices/${invoice.id}`)} className="cursor-pointer border-b border-[#bdc9c1] hover:bg-[#dfebe4]"><td className="px-4 py-3 font-mono text-sm font-semibold">{invoice.invoiceNumber}</td><td className="px-4 py-3 text-sm">{invoice.customerName || "Client comptoir"}<span className="block text-xs text-[#6e7a72]">{invoice.lines?.length || 0} article(s)</span></td><td className="px-4 py-3 text-right font-mono text-sm font-semibold">{currencyFormatter.format(invoice.totalAmount)}</td><td className="px-4 py-3 text-right text-sm text-[#006547]">{invoice.totalMargin != null ? currencyFormatter.format(invoice.totalMargin) : "—"}</td><td className="px-4 py-3 text-xs text-[#3e4943]">{new Date(invoice.createdAt).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}</td><td className="px-4 py-3"><span className="inline-flex items-center gap-1 rounded bg-[#ddf4ea] px-2 py-1 text-xs font-semibold text-[#006547]"><CheckCircle2 size={14} /> {invoice.status || "VALIDATED"}</span></td></tr>)}</tbody><tfoot><tr className="bg-[#ebf6ef]"><td colSpan="3" className="px-4 py-3 text-xs text-[#3e4943]">Affichage de {filteredInvoices.length} facture(s)</td><td colSpan="3" className="px-4 py-3 text-right"><button type="button" disabled className="mr-1 inline-flex h-8 w-8 items-center justify-center rounded border border-[#bdc9c1] opacity-50"><ChevronLeft size={15} /></button><button type="button" disabled className="inline-flex h-8 w-8 items-center justify-center rounded border border-[#bdc9c1] opacity-50"><ChevronRight size={15} /></button></td></tr></tfoot></table></div>
+                    <div className="overflow-x-auto rounded-lg border border-[#bdc9c1] bg-white"><table className="w-full min-w-[760px] border-collapse text-left"><thead className="border-b border-[#bdc9c1] bg-[#ebf6ef]"><tr>{["Invoice #", "Client", "Montant (FCFA)", "Marge", "Date & Heure", "Statut"].map((heading) => <th key={heading} className="px-4 py-3 text-[10px] font-bold uppercase tracking-[0.06em] text-[#3e4943]">{heading}</th>)}</tr></thead><tbody>{filteredInvoices.map((invoice) => <tr key={invoice.id} onClick={() => navigate(`/invoices/${invoice.id}`)} className={`cursor-pointer border-b border-[#bdc9c1] hover:bg-[#dfebe4] ${invoice.isPending ? "bg-[#fffaf0]" : ""}`}><td className="px-4 py-3 font-mono text-sm font-semibold">{invoice.invoiceNumber}</td><td className="px-4 py-3 text-sm">{invoice.customerName || "Client comptoir"}<span className="block text-xs text-[#6e7a72]">{invoice.lines?.length || 0} article(s)</span></td><td className="px-4 py-3 text-right font-mono text-sm font-semibold">{currencyFormatter.format(invoice.totalAmount)}</td><td className="px-4 py-3 text-right text-sm text-[#006547]">{invoice.totalMargin != null ? currencyFormatter.format(invoice.totalMargin) : "—"}</td><td className="px-4 py-3 text-xs text-[#3e4943]">{new Date(invoice.createdAt).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}</td><td className="px-4 py-3">{invoice.isPending ? <span className="inline-flex items-center gap-1 rounded bg-[#fdf0dc] px-2 py-1 text-xs font-semibold text-[#9f6300]"><Clock size={14} /> En attente de sync</span> : <span className="inline-flex items-center gap-1 rounded bg-[#ddf4ea] px-2 py-1 text-xs font-semibold text-[#006547]"><CheckCircle2 size={14} /> {invoice.status || "VALIDATED"}</span>}</td></tr>)}</tbody><tfoot><tr className="bg-[#ebf6ef]"><td colSpan="3" className="px-4 py-3 text-xs text-[#3e4943]">Affichage de {filteredInvoices.length} facture(s)</td><td colSpan="3" className="px-4 py-3 text-right"><button type="button" disabled className="mr-1 inline-flex h-8 w-8 items-center justify-center rounded border border-[#bdc9c1] opacity-50"><ChevronLeft size={15} /></button><button type="button" disabled className="inline-flex h-8 w-8 items-center justify-center rounded border border-[#bdc9c1] opacity-50"><ChevronRight size={15} /></button></td></tr></tfoot></table></div>
                 )}
             </main>
 

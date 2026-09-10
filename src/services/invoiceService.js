@@ -12,6 +12,16 @@ export async function addInvoiceLine(invoiceId, productId, quantity, discountTyp
     return response.data;
 }
 
+/**
+ * Remplace directement la quantité d'une ligne déjà présente dans la
+ * facture (contrairement à addInvoiceLine, qui fusionne/additionne).
+ * Réservé aux utilisateurs ayant la permission EDIT_INVOICE (managers).
+ */
+export async function modifyLineQuantity(invoiceId, saleId, quantity) {
+    const response = await api.put(`/invoices/${invoiceId}/lines/${saleId}/quantity`, { quantity });
+    return response.data;
+}
+
 export async function removeInvoiceLine(invoiceId, saleId, isManagerAction = false) {
     const response = await api.delete(
         `/invoices/${invoiceId}/lines/${saleId}?isManagerAction=${isManagerAction}`

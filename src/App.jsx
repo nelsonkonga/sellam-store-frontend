@@ -5,6 +5,7 @@ import { ShopProvider } from "./context/ShopContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { ProductsProvider } from "./context/ProductsContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import UpdateBanner from "./components/UpdateBanner.jsx";
 import ReferralPage from "./services/ReferralPage.jsx";
 
 import AuthPage from "./pages/AuthPage";
@@ -49,6 +50,7 @@ export default function App() {
             <AuthProvider>
                 <ShopProvider>
                     <ProductsProvider>
+                        <UpdateBanner />
                         <BrowserRouter>
                             <Routes>
                                 {/* Routes publiques */}

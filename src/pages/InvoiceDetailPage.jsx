@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2, Printer, Edit3, PlusSquare, CheckCircle2 } from "lucide-react";
-import { getInvoice, removeInvoiceLine, addInvoiceLine, downloadInvoicePdf, applyInvoiceDiscount } from "../services/invoiceService";
+import { ArrowLeft, CheckCircle2, Clock, Trash2, PlusSquare, Plus, Printer, Minus } from "lucide-react";
+import { getInvoice, addInvoiceLine, removeInvoiceLine, applyInvoiceDiscount, modifyLineQuantity, downloadInvoicePdf } from "../services/invoiceService";
 import { getProducts } from "../services/productService";
-import { useAuth } from "../context/AuthContext";
 import { useShop } from "../context/ShopContext";
+import { useAuth } from "../context/AuthContext";
+import { getPendingInvoiceById } from "../hooks/usePendingInvoices";
 import ErrorState from "../components/ErrorState";
 import SyncStatus from "../components/SyncStatus";
 
@@ -20,24 +21,47 @@ export default function InvoiceDetailPage() {
     const { selectedShopId: shopId } = useShop();
     const { isManager } = useAuth(); // à exposer dans AuthContext selon ton modèle de compte ; sinon mets `true` en dur pour l'instant
 
+    const isPending = id?.startsWith("pending-");
+
     const [invoice, setInvoice] = useState(null);
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [showAddProduct, setShowAddProduct] = useState(false);
+    const [addQuantity, setAddQuantity] = useState(1);
+    const [selectedProductId, setSelectedProductId] = useState(null);
     const [showDiscountModal, setShowDiscountModal] = useState(false);
     const [discountType, setDiscountType] = useState("PERCENTAGE");
     const [discountValue, setDiscountValue] = useState("");
+    // Édition inline de la quantité d'une ligne existante : { saleId, value }
+    const [editingLine, setEditingLine] = useState(null);
 
     useEffect(() => {
         async function load() {
+            setError("");
             try {
-                const [invoiceData, productsData] = await Promise.all([
-                    getInvoice(id),
-                    getProducts(shopId),
-                ]);
-                setInvoice(invoiceData);
-                setProducts(productsData);
+                if (isPending) {
+                    // Facture créée hors ligne, pas encore synchronisée : on la lit
+                    // depuis Dexie plutôt que d'appeler une API qui ne la connaît pas
+                    // encore. Les produits viennent aussi du cache local préchargé.
+                    const [invoiceData, productsData] = await Promise.all([
+                        getPendingInvoiceById(id),
+                        getProducts(shopId),
+                    ]);
+                    if (!invoiceData) {
+                        setError("Cette facture en attente n'est plus disponible (déjà synchronisée ?).");
+                    } else {
+                        setInvoice(invoiceData);
+                    }
+                    setProducts(productsData);
+                } else {
+                    const [invoiceData, productsData] = await Promise.all([
+                        getInvoice(id),
+                        getProducts(shopId),
+                    ]);
+                    setInvoice(invoiceData);
+                    setProducts(productsData);
+                }
             } catch (err) {
                 setError("Impossible de charger la facture.");
             } finally {
@@ -45,9 +69,23 @@ export default function InvoiceDetailPage() {
             }
         }
         load();
-    }, [id, shopId]);
+    }, [id, shopId, isPending]);
+
+    async function refreshInvoice() {
+        if (isPending) {
+            const invoiceData = await getPendingInvoiceById(id);
+            setInvoice(invoiceData);
+        } else {
+            const invoiceData = await getInvoice(id);
+            setInvoice(invoiceData);
+        }
+    }
 
     async function handleRemoveLine(saleId) {
+        if (isPending) {
+            setError("Cette facture n'est pas encore synchronisée : attendez la reconnexion avant de la modifier.");
+            return;
+        }
         if (!window.confirm("Retirer ce produit de la facture ? Le stock sera restitué.")) return;
         try {
             const updated = await removeInvoiceLine(id, saleId, true);
@@ -57,9 +95,22 @@ export default function InvoiceDetailPage() {
         }
     }
 
-    async function handleAddProduct(productId, quantity) {
+    function openAddProduct() {
+        setSelectedProductId(null);
+        setAddQuantity(1);
+        setShowAddProduct(true);
+    }
+
+    async function handleAddProduct() {
+        if (isPending) {
+            setError("Cette facture n'est pas encore synchronisée : attendez la reconnexion avant de la modifier.");
+            return;
+        }
+        if (!selectedProductId || addQuantity < 1) return;
         try {
-            const updated = await addInvoiceLine(id, productId, quantity);
+            // addInvoiceLine fusionne automatiquement la quantité côté backend si
+            // le produit est déjà présent dans la facture (voir InvoiceService.addLine).
+            const updated = await addInvoiceLine(id, selectedProductId, addQuantity);
             setInvoice(updated);
             setShowAddProduct(false);
         } catch (err) {
@@ -67,7 +118,37 @@ export default function InvoiceDetailPage() {
         }
     }
 
+    function startEditQuantity(line) {
+        if (!isManager) return;
+        setEditingLine({ saleId: line.saleId, value: String(line.quantity) });
+    }
+
+    async function commitEditQuantity() {
+        if (!editingLine) return;
+        if (isPending) {
+            setError("Cette facture n'est pas encore synchronisée : attendez la reconnexion avant de la modifier.");
+            setEditingLine(null);
+            return;
+        }
+        const newQuantity = parseInt(editingLine.value, 10);
+        setEditingLine(null);
+        if (!Number.isFinite(newQuantity) || newQuantity < 1) return;
+        try {
+            // Remplace directement la quantité (contrairement à l'ajout, qui
+            // additionne) -- c'est le 2e moyen de changer la quantité d'un
+            // produit déjà présent, réservé aux comptes managers.
+            const updated = await modifyLineQuantity(id, editingLine.saleId, newQuantity);
+            setInvoice(updated);
+        } catch (err) {
+            setError(err.response?.data?.message || "Impossible de modifier la quantité.");
+        }
+    }
+
     async function handleApplyDiscount() {
+        if (isPending) {
+            setError("Cette facture n'est pas encore synchronisée : attendez la reconnexion avant de la modifier.");
+            return;
+        }
         const numericValue = parseFloat(discountValue);
         if (!numericValue || numericValue <= 0) return;
         try {
@@ -96,6 +177,8 @@ export default function InvoiceDetailPage() {
         );
     }
 
+    const selectedProduct = products.find((p) => p.id === selectedProductId);
+
     return (
         <div className="min-h-screen bg-[#f1fcf5] px-5 py-6 text-[#141e1a]">
             <header className="mx-auto mb-6 flex max-w-6xl items-center justify-between gap-3 border-b border-[#bdc9c1] pb-5">
@@ -103,13 +186,19 @@ export default function InvoiceDetailPage() {
                     <ArrowLeft size={20} />
                 </button>
                 <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#006547]">Facture / Détail</p><h1 className="font-display text-xl font-semibold">Facture <span className="font-mono">#{invoice.invoiceNumber}</span> <span className="ml-2 inline-flex items-center gap-1 rounded bg-[#ddf4ea] px-2 py-1 text-[10px] font-bold uppercase text-[#006547]"><CheckCircle2 size={13} /> {invoice.status || "VALIDATED"}</span></h1>
+                    <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#006547]">Facture / Détail</p><h1 className="font-display text-xl font-semibold">Facture <span className="font-mono">#{invoice.invoiceNumber}</span> {isPending ? <span className="ml-2 inline-flex items-center gap-1 rounded bg-[#fdf0dc] px-2 py-1 text-[10px] font-bold uppercase text-[#9f6300]"><Clock size={13} /> En attente de sync</span> : <span className="ml-2 inline-flex items-center gap-1 rounded bg-[#ddf4ea] px-2 py-1 text-[10px] font-bold uppercase text-[#006547]"><CheckCircle2 size={13} /> {invoice.status || "VALIDATED"}</span>}</h1>
                     <div className="mt-1"><SyncStatus /></div></div></div>
                 <div className="hidden items-end gap-6 text-right sm:flex"><div><p className="text-[10px] font-bold uppercase tracking-[0.06em] text-[#6e7a72]">Boutique</p><p className="text-sm font-semibold">Boutique active</p></div><div><p className="text-[10px] font-bold uppercase tracking-[0.06em] text-[#6e7a72]">Date</p><p className="font-mono text-xs">{new Date(invoice.createdAt).toLocaleString("fr-FR")}</p></div></div>
             </header>
 
+            {isPending && (
+                <div className="mx-auto mb-4 max-w-6xl rounded-lg bg-[#fdf0dc] px-4 py-3 text-sm font-medium text-[#9f6300]">
+                    Cette facture a été créée hors ligne et sera synchronisée automatiquement dès le retour de la connexion. Son numéro définitif sera attribué à ce moment-là.
+                </div>
+            )}
+
             {error && (
-                <div role="alert" className="mb-4 rounded-lg bg-[#ffdad6] px-4 py-3 text-sm font-medium text-[#93000a]">
+                <div role="alert" className="mx-auto mb-4 max-w-6xl rounded-lg bg-[#ffdad6] px-4 py-3 text-sm font-medium text-[#93000a]">
                     {error}
                 </div>
             )}
@@ -120,7 +209,32 @@ export default function InvoiceDetailPage() {
                 {invoice.lines.map((line) => (
                     <div key={line.saleId} className="flex items-center justify-between border-b border-[#bdc9c1]/50 py-3 last:border-0">
                         <div>
-                            <span>{line.productName} × {line.quantity}</span>
+                            {editingLine?.saleId === line.saleId ? (
+                                <span className="inline-flex items-center gap-2">
+                                    {line.productName} ×
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        autoFocus
+                                        value={editingLine.value}
+                                        onChange={(e) => setEditingLine({ saleId: line.saleId, value: e.target.value })}
+                                        onBlur={commitEditQuantity}
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter") commitEditQuantity();
+                                            if (e.key === "Escape") setEditingLine(null);
+                                        }}
+                                        className="w-16 rounded border border-[#006547] px-2 py-0.5 text-center"
+                                    />
+                                </span>
+                            ) : (
+                                <span
+                                    onClick={() => startEditQuantity(line)}
+                                    className={isManager ? "cursor-pointer underline decoration-dotted underline-offset-2" : ""}
+                                    title={isManager ? "Cliquer pour modifier la quantité" : undefined}
+                                >
+                                    {line.productName} × {line.quantity}
+                                </span>
+                            )}
                             {line.discountAmount > 0 && (
                                 <p className="mt-0.5 text-xs text-[#9f6300]">
                                     Remise ligne: -{currencyFormatter.format(line.discountAmount)}
@@ -169,15 +283,17 @@ export default function InvoiceDetailPage() {
                     <h2 className="mb-3 border-b border-[#bdc9c1] pb-2 text-xs font-bold uppercase tracking-[0.06em] text-[#3e4943]">Actions sensibles</h2><div className="flex flex-col gap-2">
                     <button
                         type="button"
-                        onClick={() => setShowAddProduct(true)}
-                        className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#bdc9c1] py-3 text-sm font-semibold hover:bg-[#ebf6ef]"
+                        onClick={openAddProduct}
+                        disabled={isPending}
+                        className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#bdc9c1] py-3 text-sm font-semibold hover:bg-[#ebf6ef] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         <PlusSquare size={16} /> Produit
                     </button>
                     <button
                         type="button"
                         onClick={() => setShowDiscountModal(true)}
-                        className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#bdc9c1] py-3 text-sm font-semibold hover:bg-[#ebf6ef]"
+                        disabled={isPending}
+                        className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#bdc9c1] py-3 text-sm font-semibold hover:bg-[#ebf6ef] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         <Plus size={16} /> Remise globale
                     </button>
@@ -187,9 +303,10 @@ export default function InvoiceDetailPage() {
             <button
                 type="button"
                 onClick={() => downloadInvoicePdf(invoice.id).catch(e => console.error(e))}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#006547] py-3.5 font-semibold text-white transition hover:bg-[#12805c]"
+                disabled={isPending}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#006547] py-3.5 font-semibold text-white transition hover:bg-[#12805c] disabled:cursor-not-allowed disabled:opacity-50"
             >
-                <Printer size={17} /> Réimprimer
+                <Printer size={17} /> {isPending ? "Disponible après synchronisation" : "Réimprimer"}
             </button>
             </aside></div>
 
@@ -197,17 +314,46 @@ export default function InvoiceDetailPage() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowAddProduct(false)}>
                     <div onClick={(e) => e.stopPropagation()} className="max-h-[70vh] w-full max-w-sm overflow-y-auto rounded-lg border border-[#bdc9c1] bg-white p-5 text-[#141e1a] shadow-xl">
                         <h2 className="text-lg font-bold mb-4">Ajouter un produit</h2>
-                        {products.map((p) => (
-                            <button
-                                key={p.id}
-                                type="button"
-                                onClick={() => handleAddProduct(p.id, 1)}
-                                className="flex w-full items-center justify-between py-2 border-b border-white/10 last:border-0 text-left"
-                            >
-                                <span>{p.name}</span>
-                                <span className="text-sm text-[#6e7a72]">{currencyFormatter.format(p.sellingPrice)}</span>
-                            </button>
-                        ))}
+                        {selectedProductId ? (
+                            <div>
+                                <button type="button" onClick={() => setSelectedProductId(null)} className="mb-3 text-sm text-[#006547] underline">
+                                    ← Choisir un autre produit
+                                </button>
+                                <p className="mb-1 font-semibold">{selectedProduct?.name}</p>
+                                <p className="mb-4 text-sm text-[#6e7a72]">{currencyFormatter.format(selectedProduct?.sellingPrice || 0)} / unité</p>
+                                <label className="mb-1 block text-xs font-bold uppercase tracking-[0.06em] text-[#3e4943]">Quantité</label>
+                                <div className="mb-4 flex items-center gap-2">
+                                    <button type="button" onClick={() => setAddQuantity((q) => Math.max(1, q - 1))} className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#bdc9c1] hover:bg-[#ebf6ef]">
+                                        <Minus size={16} />
+                                    </button>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        value={addQuantity}
+                                        onChange={(e) => setAddQuantity(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                                        className="h-10 w-full rounded-lg border border-[#bdc9c1] text-center"
+                                    />
+                                    <button type="button" onClick={() => setAddQuantity((q) => q + 1)} className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#bdc9c1] hover:bg-[#ebf6ef]">
+                                        <Plus size={16} />
+                                    </button>
+                                </div>
+                                <button type="button" onClick={handleAddProduct} className="w-full rounded-lg bg-[#12805c] py-3 font-semibold text-white">
+                                    Ajouter {addQuantity} × {selectedProduct?.name}
+                                </button>
+                            </div>
+                        ) : (
+                            products.map((p) => (
+                                <button
+                                    key={p.id}
+                                    type="button"
+                                    onClick={() => { setSelectedProductId(p.id); setAddQuantity(1); }}
+                                    className="flex w-full items-center justify-between py-2 border-b border-white/10 last:border-0 text-left"
+                                >
+                                    <span>{p.name}</span>
+                                    <span className="text-sm text-[#6e7a72]">{currencyFormatter.format(p.sellingPrice)}</span>
+                                </button>
+                            ))
+                        )}
                     </div>
                 </div>
             )}

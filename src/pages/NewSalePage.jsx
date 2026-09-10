@@ -245,7 +245,7 @@ export default function NewSalePage() {
   }
 
   return (
-      <div className="min-h-screen bg-[#f1fcf5] pb-40 text-[#141e1a]">
+      <div className="min-h-screen bg-[#f1fcf5] pb-48 text-[#141e1a] lg:pb-10">
         <header className="mx-auto flex max-w-7xl items-center gap-3 border-b border-[#bdc9c1] px-5 pb-5 pt-7 md:px-8 lg:px-10">
           <button
               type="button"
@@ -347,8 +347,7 @@ export default function NewSalePage() {
         </main>
 
         {invoice && invoice.lines?.length > 0 && (
-            <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#bdc9c1] bg-[#f1fcf5]/95 px-5 pb-6 pt-4 backdrop-blur-md lg:static lg:col-start-2 lg:row-start-4 lg:bg-white lg:px-4">
-              <div className="mx-auto max-w-5xl">
+            <div className="fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom))] left-0 right-0 z-50 border-t border-[#bdc9c1] bg-[#f1fcf5]/95 px-5 pb-4 pt-4 backdrop-blur-md lg:static lg:bottom-auto lg:col-start-2 lg:row-start-4 lg:bg-white lg:px-4">
                 <input
                   type="text"
                   value={customerName}
@@ -365,76 +364,83 @@ export default function NewSalePage() {
                   {validating ? "Validation..." : `Valider la vente — ${currencyFormatter.format(invoice.totalAmount)}`}
                 </button>
               </div>
-            </div>
+        
         )}
 
         {selectedProduct && (
-            <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center" onClick={closeKeypad}>
-              <div onClick={(e) => e.stopPropagation()} className="w-full max-w-sm rounded-t-2xl border border-[#bdc9c1] bg-white p-5 text-[#141e1a] shadow-xl sm:rounded-2xl">
-                <div className="mb-4 flex items-center justify-between">
+            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" onClick={closeKeypad}>
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="flex w-full max-w-sm flex-col rounded-2xl border border-[#bdc9c1] bg-white text-[#141e1a] shadow-xl"
+                style={{ maxHeight: "calc(100vh - 6rem - env(safe-area-inset-bottom, 0px))" }}
+              >
+                <div className="flex shrink-0 items-center justify-between p-5 pb-4">
                   <h2 className="text-lg font-bold text-[#141e1a]">Quantité</h2>
                   <button type="button" onClick={closeKeypad} aria-label="Fermer" className="flex h-8 w-8 items-center justify-center rounded-lg text-[#6e7a72] hover:bg-[#dfebe4]">
                     <X size={18} />
                   </button>
                 </div>
-                <QuantityKeypad product={selectedProduct} quantity={quantity} onQuantityChange={setQuantity} />
-
-                {/* Remise par ligne (optionnelle) */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowLineDiscount(!showLineDiscount);
-                    if (showLineDiscount) {
-                      setLineDiscountType(null);
-                      setLineDiscountValue("");
-                    }
-                  }}
-                  className="mt-3 flex items-center gap-1.5 text-xs font-medium text-[#006547] hover:underline"
-                >
-                  <Tag size={14} />
-                  {showLineDiscount ? "Annuler la remise" : "Ajouter une remise"}
-                </button>
-
-                {showLineDiscount && (
-                  <div className="mt-2 rounded-xl bg-white/5 border border-white/10 p-3">
-                    <div className="flex gap-2 mb-2">
-                      <button
-                        type="button"
-                        onClick={() => setLineDiscountType("PERCENTAGE")}
-                        className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition ${
-                          lineDiscountType === "PERCENTAGE" ? "bg-[#12805c] text-white" : "bg-[#ebf6ef] text-[#3e4943]"
-                        }`}
-                      >
-                        Pourcentage (%)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setLineDiscountType("FIXED_AMOUNT")}
-                        className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition ${
-                          lineDiscountType === "FIXED_AMOUNT" ? "bg-[#12805c] text-white" : "bg-[#ebf6ef] text-[#3e4943]"
-                        }`}
-                      >
-                        Montant fixe
-                      </button>
+ 
+                <div className="min-h-0 overflow-y-auto px-5 pb-5">
+                  <QuantityKeypad product={selectedProduct} quantity={quantity} onQuantityChange={setQuantity} />
+ 
+                  {/* Remise par ligne (optionnelle) */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowLineDiscount(!showLineDiscount);
+                      if (showLineDiscount) {
+                        setLineDiscountType(null);
+                        setLineDiscountValue("");
+                      }
+                    }}
+                    className="mt-3 flex items-center gap-1.5 text-xs font-medium text-[#006547] hover:underline"
+                  >
+                    <Tag size={14} />
+                    {showLineDiscount ? "Annuler la remise" : "Ajouter une remise"}
+                  </button>
+ 
+                  {showLineDiscount && (
+                    <div className="mt-2 rounded-xl bg-white/5 border border-white/10 p-3">
+                      <div className="flex gap-2 mb-2">
+                        <button
+                          type="button"
+                          onClick={() => setLineDiscountType("PERCENTAGE")}
+                          className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition ${
+                            lineDiscountType === "PERCENTAGE" ? "bg-[#12805c] text-white" : "bg-[#ebf6ef] text-[#3e4943]"
+                          }`}
+                        >
+                          Pourcentage (%)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setLineDiscountType("FIXED_AMOUNT")}
+                          className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition ${
+                            lineDiscountType === "FIXED_AMOUNT" ? "bg-[#12805c] text-white" : "bg-[#ebf6ef] text-[#3e4943]"
+                          }`}
+                        >
+                          Montant fixe
+                        </button>
+                      </div>
+                      <input
+                        type="number"
+                        value={lineDiscountValue}
+                        onChange={(e) => setLineDiscountValue(e.target.value)}
+                        placeholder={lineDiscountType === "PERCENTAGE" ? "Ex: 10" : "Ex: 500"}
+                        className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm"
+                      />
                     </div>
-                    <input
-                      type="number"
-                      value={lineDiscountValue}
-                      onChange={(e) => setLineDiscountValue(e.target.value)}
-                      placeholder={lineDiscountType === "PERCENTAGE" ? "Ex: 10" : "Ex: 500"}
-                      className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm"
-                    />
-                  </div>
-                )}
-
-                {confirmError && (
-                    <div role="alert" className="mt-4 rounded-lg bg-[#ffdad6] px-4 py-3 text-sm font-medium text-[#93000a]">
-                      {confirmError}
-                    </div>
-                )}
-                <button type="button" onClick={handleAddLine} disabled={confirming} className="mt-4 w-full rounded-lg bg-[#12805c] py-4 text-base font-bold text-white disabled:opacity-60">
-                  {confirming ? "Ajout..." : "Ajouter au panier"}
-                </button>
+                  )}
+ 
+                  {confirmError && (
+                      <div role="alert" className="mt-4 rounded-lg bg-[#ffdad6] px-4 py-3 text-sm font-medium text-[#93000a]">
+                        {confirmError}
+                      </div>
+                  )}
+                  <button type="button" onClick={handleAddLine} disabled={confirming} className="mt-4 w-full rounded-lg bg-[#12805c] py-4 text-base font-bold text-white disabled:opacity-60">
+                    {confirming ? "Ajout..." : "Ajouter au panier"}
+                  </button>
+                </div>
               </div>
             </div>
         )}

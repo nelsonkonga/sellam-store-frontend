@@ -88,7 +88,7 @@ export default function ProductsPage() {
 
   return (
     <div className="min-h-screen bg-[#f1fcf5] pb-24 text-[#141e1a]">
-      <header className="border-b border-[#bdc9c1] bg-[#f1fcf5] px-5 py-6 md:px-8 lg:px-10">
+       <header className="sticky top-0 z-10 border-b border-[#bdc9c1] bg-[#f1fcf5]/95 px-5 py-6 backdrop-blur-sm md:px-8 lg:px-10">
         <div className="mx-auto flex max-w-7xl items-end justify-between gap-4">
           <div><p className="mb-2 text-xs font-bold uppercase tracking-[0.08em] text-[#006547]">Catalogue</p><h1 className="font-display text-3xl font-semibold tracking-tight">Catalogue Produits</h1><p className="mt-1 text-base text-[#3e4943]">Gestion de l'inventaire et des marges.</p></div>
           <div className="hidden gap-2 sm:flex">

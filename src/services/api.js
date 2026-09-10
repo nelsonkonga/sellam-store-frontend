@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getCacheKey, getCachedResponse, setCachedResponse, clearOfflineCache } from "./offlineCache";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:8080/api",
@@ -33,26 +34,21 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-function getCacheKey(config) {
-  const paramsStr = config.params ? JSON.stringify(config.params) : "";
-  return `offline_cache_${config.url}_${paramsStr}`;
-}
-
 api.interceptors.response.use(
     (response) => {
       if (response.config.method?.toLowerCase() === 'get' && !response.config.responseType) {
-        try {
-          const key = getCacheKey(response.config);
-          localStorage.setItem(key, JSON.stringify(response.data));
-        } catch (err) {
-          // Ignore localStorage errors (quota exceeded, etc.)
-        }
+        const key = getCacheKey(response.config.url, response.config.params);
+        setCachedResponse(key, response.data);
       }
       return response;
     },
     (error) => {
       if (error.response?.status === 401) {
         onUnauthorized();
+        // Le cache offline peut contenir des données propres au compte qui vient
+        // d'être déconnecté (produits, factures...) ; on l'efface pour éviter
+        // qu'un prochain utilisateur du même appareil hors ligne ne les voie.
+        clearOfflineCache();
 
         if (window.location.pathname !== "/login") {
           window.location.href = "/login";
@@ -85,21 +81,17 @@ api.interceptors.response.use(
       if (isNetworkError) {
         const config = error.config;
         if (config && config.method?.toLowerCase() === 'get' && !config.responseType) {
-          try {
-            const key = getCacheKey(config);
-            const cached = localStorage.getItem(key);
-            if (cached) {
-              return Promise.resolve({
-                data: JSON.parse(cached),
-                status: 200,
-                statusText: 'OK (Cached)',
-                headers: {},
-                config: config,
-                fromCache: true
-              });
-            }
-          } catch (err) {
-            // Ignore parse errors
+          const key = getCacheKey(config.url, config.params);
+          const cached = getCachedResponse(key);
+          if (cached !== null) {
+            return Promise.resolve({
+              data: cached,
+              status: 200,
+              statusText: 'OK (Cached)',
+              headers: {},
+              config: config,
+              fromCache: true
+            });
           }
         }
       }

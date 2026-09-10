@@ -17,6 +17,16 @@ self.addEventListener('activate', function (event) {
   }
 });
 
+// Permet au frontend de déclencher l'activation immédiate d'une nouvelle
+// version en attente, depuis le bouton "Mettre à jour" du bandeau de mise
+// à jour (voir useAppUpdate.js) -- plutôt que d'attendre la fermeture
+// naturelle de tous les onglets ouverts.
+self.addEventListener('message', function (event) {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener('push', function (event) {
   if (event.data) {
     try {

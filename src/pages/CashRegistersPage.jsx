@@ -84,15 +84,21 @@ export default function CashRegistersPage() {
   return (
     <div className="min-h-screen bg-[#f1fcf5] pb-24 text-[#141e1a]">
       <div className="mx-auto max-w-7xl px-5 py-2 md:px-8 lg:px-10">
-        <div className="flex items-center gap-3 mb-6">
+        <div className="sticky top-0 z-10 mb-6 flex flex-wrap items-center gap-3 bg-[#f1fcf5]/95 py-2 backdrop-blur-sm">
           <button onClick={() => navigate("/dashboard")} className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#bdc9c1] bg-white text-[#3e4943] hover:bg-[#ebf6ef]">
             <ArrowLeft size={20} />
           </button>
-          <div>
+          <div className="flex-1">
             <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#006547]">Trésorerie</p>
             <h1 className="font-display text-3xl font-bold">Gestion des Caisses</h1>
             <p className="text-sm text-[#6e7a72]">Vue d'ensemble et contrôle des points de vente.</p>
           </div>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="shrink-0 rounded-lg bg-[#006547] px-4 py-2 text-sm font-semibold text-white hover:bg-[#12805c]"
+          >
+            + Créer une caisse
+          </button>
         </div>
 
         {error && (
@@ -105,14 +111,6 @@ export default function CashRegistersPage() {
           <p className="text-center text-sm text-[#6e7a72] py-10">Chargement des caisses...</p>
         ) : (
           <>
-            <div className="flex justify-end mb-6">
-              <button 
-                onClick={() => setShowCreateModal(true)}
-                className="bg-[#006547] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#12805c]"
-              >
-                + Créer une caisse
-              </button>
-            </div>
 
             {/* Dashboard Grid (Bento style) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

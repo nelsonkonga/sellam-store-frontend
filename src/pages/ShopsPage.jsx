@@ -131,9 +131,9 @@ export default function ShopsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f8f5] px-4 py-6 text-[#141e1a] md:px-8 lg:px-10">
+    <div className="min-h-screen bg-[#f7f8f5] px-4 py-6 pb-24 text-[#141e1a] md:px-8 md:pb-6 lg:px-10">
       <div className="mx-auto max-w-5xl rounded-2xl border border-[#dce4de] bg-white/95 p-4 shadow-[0_4px_24px_rgba(0,0,0,0.05)] md:p-6 lg:p-8">
-        <header className="flex flex-col gap-4 border-b border-[#dce4de] pb-5 md:flex-row md:items-center md:justify-between">
+        <header className="sticky top-0 z-10 flex flex-col gap-4 border-b border-[#dce4de] bg-white/95 pb-5 pt-1 backdrop-blur-sm md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#006547]">Votre réseau</p>
             <h1 className="mt-2 text-3xl font-bold tracking-tight text-[#141e1a]">Vos boutiques</h1>

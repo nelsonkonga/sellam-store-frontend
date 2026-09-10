@@ -12,6 +12,7 @@ import ProductRow from "../components/ProductRow";
 import OfflineBanner from "../components/OfflineBanner";
 import ErrorState from "../components/ErrorState";
 import EmptyState from "../components/EmptyState";
+import { usePendingInvoices } from "../hooks/usePendingInvoices";
 
 
 // Formatteur de montant en Francs CFA (adapte facilement à une autre devise si besoin)
@@ -32,6 +33,7 @@ export default function DashboardPage() {
   const location = useLocation();
   const { name } = useAuth();
   const { selectedShopId: shopId, selectedShopName, selectedShop } = useShop();
+  const { pendingInvoices } = usePendingInvoices(shopId);
   const routeMessage = location.state?.message || "";
 
   // Charge les données consolidées du cockpit dès qu'on connaît la boutique active
@@ -88,7 +90,10 @@ export default function DashboardPage() {
   const totalMarginToday = dashboardData?.kpis?.totalMarginToday ?? 0;
   const averageBasket = dashboardData?.kpis?.averageBasket ?? 0;
   const lowStockCount = dashboardData?.kpis?.lowStockCount ?? 0;
-  const recentInvoices = dashboardData?.recentInvoices || [];
+  // Les factures créées hors ligne (pas encore synchronisées) sont
+  // fusionnées en tête de la timeline pour apparaître immédiatement,
+  // sans attendre la reconnexion et le prochain fetch du dashboard.
+  const recentInvoices = [...pendingInvoices, ...(dashboardData?.recentInvoices || [])];
   const criticalProducts = dashboardData?.criticalProducts || [];
 
   function getStatusBadge(status) {
@@ -195,16 +200,27 @@ export default function DashboardPage() {
           <div
             key={invoice.id}
             onClick={() => navigate(`/invoices/${invoice.id}`)}
-            className="group relative flex cursor-pointer items-center justify-between rounded-xl border border-[#bdc9c1]/60 bg-white p-4 transition hover:border-[#006547] hover:bg-[#f1fcf5]/40 hover:shadow-sm"
+            className={`group relative flex cursor-pointer items-center justify-between rounded-xl border p-4 transition hover:shadow-sm ${
+              invoice.isPending
+                ? "border-[#f0c987] bg-[#fffaf0] hover:border-[#9f6300]"
+                : "border-[#bdc9c1]/60 bg-white hover:border-[#006547] hover:bg-[#f1fcf5]/40"
+            }`}
           >
             {/* Puce chronologique sur la ligne verticale */}
-            <span className="absolute -left-[33px] top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded-full border-2 border-[#006547] bg-white transition group-hover:bg-[#006547]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#006547] transition group-hover:bg-white" />
+            <span className={`absolute -left-[33px] top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center rounded-full border-2 bg-white transition ${
+              invoice.isPending ? "border-[#9f6300] group-hover:bg-[#9f6300]" : "border-[#006547] group-hover:bg-[#006547]"
+            }`}>
+              <span className={`h-1.5 w-1.5 rounded-full transition group-hover:bg-white ${invoice.isPending ? "bg-[#9f6300]" : "bg-[#006547]"}`} />
             </span>
-
+ 
             <div className="min-w-0 pr-4">
-              <p className="text-sm font-bold text-[#141e1a] group-hover:text-[#006547] transition-colors">
+              <p className="flex items-center gap-2 text-sm font-bold text-[#141e1a] group-hover:text-[#006547] transition-colors">
                 {invoice.invoiceNumber}
+                {invoice.isPending && (
+                  <span className="rounded bg-[#fdf0dc] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#9f6300]">
+                    En attente
+                  </span>
+                )}
               </p>
               <p className="text-xs text-[#6e7a72] mt-0.5 truncate">
                 {invoice.lines?.length || 0} produit(s) •{" "}
@@ -219,7 +235,9 @@ export default function DashboardPage() {
               <p className="text-sm font-extrabold text-[#006547]">
                 {currencyFormatter.format(invoice.totalAmount)}
               </p>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[#6e7a72] mt-0.5">Encaissé</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#6e7a72] mt-0.5">
+                {invoice.isPending ? "Sync en attente" : "Encaissé"}
+              </p>
             </div>
           </div>
         ))}
