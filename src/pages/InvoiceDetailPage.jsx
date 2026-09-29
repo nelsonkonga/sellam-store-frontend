@@ -5,7 +5,7 @@ import { getInvoice, addInvoiceLine, removeInvoiceLine, applyInvoiceDiscount, mo
 import { getProducts } from "../services/productService";
 import { useShop } from "../context/ShopContext";
 import { useAuth } from "../context/AuthContext";
-import { getPendingInvoiceById } from "../hooks/usePendingInvoices";
+import { getPendingInvoiceById, addPendingInvoiceLine, removePendingInvoiceLine, updatePendingInvoiceQuantity, updatePendingInvoiceDiscount } from "../hooks/usePendingInvoices";
 import ErrorState from "../components/ErrorState";
 import SyncStatus from "../components/SyncStatus";
 
@@ -82,16 +82,18 @@ export default function InvoiceDetailPage() {
     }
 
     async function handleRemoveLine(saleId) {
-        if (isPending) {
-            setError("Cette facture n'est pas encore synchronisée : attendez la reconnexion avant de la modifier.");
-            return;
-        }
         if (!window.confirm("Retirer ce produit de la facture ? Le stock sera restitué.")) return;
         try {
+            if (isPending) {
+                const line = invoice.lines.find((item) => item.saleId === saleId);
+                if (!line) return;
+                setInvoice(await removePendingInvoiceLine(id, line.productId, line.quantity));
+                return;
+            }
             const updated = await removeInvoiceLine(id, saleId, true);
             setInvoice(updated);
         } catch (err) {
-            setError(err.response?.data?.message || "Impossible de retirer ce produit.");
+            setError(err.response?.data?.message || err.message || "Impossible de retirer ce produit.");
         }
     }
 
@@ -102,19 +104,18 @@ export default function InvoiceDetailPage() {
     }
 
     async function handleAddProduct() {
-        if (isPending) {
-            setError("Cette facture n'est pas encore synchronisée : attendez la reconnexion avant de la modifier.");
-            return;
-        }
         if (!selectedProductId || addQuantity < 1) return;
         try {
-            // addInvoiceLine fusionne automatiquement la quantité côté backend si
-            // le produit est déjà présent dans la facture (voir InvoiceService.addLine).
+            if (isPending) {
+                setInvoice(await addPendingInvoiceLine(id, selectedProductId, addQuantity));
+                setShowAddProduct(false);
+                return;
+            }
             const updated = await addInvoiceLine(id, selectedProductId, addQuantity);
             setInvoice(updated);
             setShowAddProduct(false);
         } catch (err) {
-            setError(err.response?.data?.message || "Impossible d'ajouter ce produit.");
+            setError(err.response?.data?.message || err.message || "Impossible d'ajouter ce produit.");
         }
     }
 
@@ -125,39 +126,56 @@ export default function InvoiceDetailPage() {
 
     async function commitEditQuantity() {
         if (!editingLine) return;
-        if (isPending) {
-            setError("Cette facture n'est pas encore synchronisée : attendez la reconnexion avant de la modifier.");
-            setEditingLine(null);
-            return;
-        }
         const newQuantity = parseInt(editingLine.value, 10);
+        const saleId = editingLine.saleId;
         setEditingLine(null);
         if (!Number.isFinite(newQuantity) || newQuantity < 1) return;
         try {
-            // Remplace directement la quantité (contrairement à l'ajout, qui
-            // additionne) -- c'est le 2e moyen de changer la quantité d'un
-            // produit déjà présent, réservé aux comptes managers.
-            const updated = await modifyLineQuantity(id, editingLine.saleId, newQuantity);
+            if (isPending) {
+                const line = invoice.lines.find((item) => item.saleId === saleId);
+                if (!line) return;
+                setInvoice(await updatePendingInvoiceQuantity(id, line.productId, newQuantity));
+                return;
+            }
+            const updated = await modifyLineQuantity(id, saleId, newQuantity);
             setInvoice(updated);
         } catch (err) {
-            setError(err.response?.data?.message || "Impossible de modifier la quantité.");
+            setError(err.response?.data?.message || err.message || "Impossible de modifier la quantité.");
         }
     }
 
-    async function handleApplyDiscount() {
-        if (isPending) {
-            setError("Cette facture n'est pas encore synchronisée : attendez la reconnexion avant de la modifier.");
+    function printPendingInvoice() {
+        const rows = (invoice.lines || []).map((line) => `<tr><td>${line.productName}</td><td>${line.quantity}</td><td>${line.totalPrice}</td></tr>`).join("");
+        const popup = window.open("", "_blank", "noopener,noreferrer");
+        if (!popup) {
+            setError("Autorisez les fenêtres pour imprimer cette facture.");
             return;
         }
+        popup.document.write(`<html><head><title>Facture</title></head><body><h1>Facture en attente</h1><p>${invoice.customerName || "Client comptoir"}</p><table>${rows}</table><p>Total : ${invoice.totalAmount}</p></body></html>`);
+        popup.document.close();
+        popup.focus();
+        popup.print();
+    }
+
+    async function handleApplyDiscount() {
         const numericValue = parseFloat(discountValue);
-        if (!numericValue || numericValue <= 0) return;
+        if (!numericValue || numericValue <= 0) {
+            setError("Indiquez un montant de remise supérieur à zéro.");
+            return;
+        }
         try {
+            if (isPending) {
+                setInvoice(await updatePendingInvoiceDiscount(id, discountType, numericValue));
+                setShowDiscountModal(false);
+                setDiscountValue("");
+                return;
+            }
             const updated = await applyInvoiceDiscount(id, discountType, numericValue);
             setInvoice(updated);
             setShowDiscountModal(false);
             setDiscountValue("");
         } catch (err) {
-            setError(err.response?.data?.message || "Impossible d'appliquer la remise.");
+            setError(err.response?.data?.message || err.message || "Impossible d'appliquer la remise.");
         }
     }
 
@@ -284,7 +302,6 @@ export default function InvoiceDetailPage() {
                     <button
                         type="button"
                         onClick={openAddProduct}
-                        disabled={isPending}
                         className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#bdc9c1] py-3 text-sm font-semibold hover:bg-[#ebf6ef] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         <PlusSquare size={16} /> Produit
@@ -292,7 +309,6 @@ export default function InvoiceDetailPage() {
                     <button
                         type="button"
                         onClick={() => setShowDiscountModal(true)}
-                        disabled={isPending}
                         className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#bdc9c1] py-3 text-sm font-semibold hover:bg-[#ebf6ef] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         <Plus size={16} /> Remise globale
@@ -302,11 +318,16 @@ export default function InvoiceDetailPage() {
 
             <button
                 type="button"
-                onClick={() => downloadInvoicePdf(invoice.id).catch(e => console.error(e))}
-                disabled={isPending}
+                onClick={() => {
+                    if (isPending) {
+                        printPendingInvoice();
+                        return;
+                    }
+                    downloadInvoicePdf(invoice.id).catch(() => setError("Impossible de générer le PDF. Réessayez."));
+                }}
                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#006547] py-3.5 font-semibold text-white transition hover:bg-[#12805c] disabled:cursor-not-allowed disabled:opacity-50"
             >
-                <Printer size={17} /> {isPending ? "Disponible après synchronisation" : "Réimprimer"}
+                <Printer size={17} /> Réimprimer
             </button>
             </aside></div>
 

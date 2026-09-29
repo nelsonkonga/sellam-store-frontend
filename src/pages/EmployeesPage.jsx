@@ -32,6 +32,7 @@ const PERMISSION_OPTIONS = [
   { value: "VIEW_DAILY_BALANCE", label: "Voir le bilan journalier" },
   { value: "MANAGE_DAILY_BALANCE", label: "Gérer le bilan journalier" },
   { value: "MANAGE_SALE_TYPES", label: "Gérer les types de vente" },
+  { value: "VIEW_REPORTS", label: "Voir les rapports" },
 ];
 
 function getRoleInfo(role) {

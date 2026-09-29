@@ -104,8 +104,7 @@ export async function syncPendingActions() {
     }
 
     if (conflicts && conflicts.length > 0) {
-        console.error('Conflits de synchronisation détectés :', conflicts);
-        // We can emit an event or show toast here later
+        throw new Error(conflicts.join(" "));
     }
 
     await db.syncMeta.put({ key: 'lastSync', value: new Date().toISOString() });

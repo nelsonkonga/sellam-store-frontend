@@ -30,7 +30,10 @@ export default function AuthPage({ mode: initialMode = MODES.LOGIN }) {
   }, [initialMode]);
 
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("reason") === "expired") setError("Votre session a expiré. Reconnectez-vous pour continuer.");
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("reason") === "expired") {
+      setError(params.get("message") || "Votre session a expiré. Reconnectez-vous pour continuer.");
+    }
   }, []);
 
   useEffect(() => {

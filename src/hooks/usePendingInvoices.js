@@ -118,3 +118,85 @@ export async function getPendingInvoiceById(pendingId) {
 
     return pendingActionToInvoice(action, productsById);
 }
+
+async function loadPendingAction(pendingId) {
+    const localId = Number(String(pendingId).replace("pending-", ""));
+    if (!Number.isFinite(localId)) {
+        throw new Error("Cette facture en attente est introuvable.");
+    }
+    const action = await db.pendingActions.get(localId);
+    if (!action || action.type !== "SYNC_INVOICE") {
+        throw new Error("Cette facture en attente est introuvable.");
+    }
+    return { localId, action };
+}
+
+async function adjustLocalStock(productId, delta) {
+    const product = await db.products.get(productId);
+    if (!product) {
+        throw new Error("Produit introuvable sur cet appareil.");
+    }
+    const next = Number(product.stockQuantity) + delta;
+    if (next < 0) {
+        throw new Error(`Stock insuffisant pour ${product.name}.`);
+    }
+    await db.products.update(productId, { stockQuantity: next });
+}
+
+export async function addPendingInvoiceLine(pendingId, productId, quantity) {
+    const { localId, action } = await loadPendingAction(pendingId);
+    const qty = Number(quantity);
+    if (!Number.isFinite(qty) || qty <= 0) {
+        throw new Error("Indiquez une quantité valide.");
+    }
+    await adjustLocalStock(productId, -qty);
+    const lines = [...(action.payload?.lines || [])];
+    const existing = lines.find((line) => String(line.productId) === String(productId));
+    if (existing) {
+        existing.quantity = Number(existing.quantity) + qty;
+    } else {
+        lines.push({ productId, quantity: qty });
+    }
+    await db.pendingActions.update(localId, { payload: { ...action.payload, lines } });
+    return getPendingInvoiceById(pendingId);
+}
+
+export async function removePendingInvoiceLine(pendingId, productId, quantity) {
+    const { localId, action } = await loadPendingAction(pendingId);
+    const lines = (action.payload?.lines || []).filter((line) => String(line.productId) !== String(productId));
+    await adjustLocalStock(productId, Number(quantity) || 0);
+    await db.pendingActions.update(localId, { payload: { ...action.payload, lines } });
+    return getPendingInvoiceById(pendingId);
+}
+
+export async function updatePendingInvoiceQuantity(pendingId, productId, newQuantity) {
+    const { localId, action } = await loadPendingAction(pendingId);
+    const lines = [...(action.payload?.lines || [])];
+    const line = lines.find((item) => String(item.productId) === String(productId));
+    if (!line) {
+        throw new Error("Cette ligne n'est plus sur la facture.");
+    }
+    const next = Number(newQuantity);
+    if (!Number.isFinite(next) || next < 1) {
+        throw new Error("Indiquez une quantité valide.");
+    }
+    const delta = next - Number(line.quantity);
+    if (delta !== 0) {
+        await adjustLocalStock(productId, -delta);
+    }
+    line.quantity = next;
+    await db.pendingActions.update(localId, { payload: { ...action.payload, lines } });
+    return getPendingInvoiceById(pendingId);
+}
+
+export async function updatePendingInvoiceDiscount(pendingId, discountType, discountAmount) {
+    const { localId, action } = await loadPendingAction(pendingId);
+    const value = Number(discountAmount);
+    if (!Number.isFinite(value) || value <= 0) {
+        throw new Error("Indiquez une remise valide.");
+    }
+    await db.pendingActions.update(localId, {
+        payload: { ...action.payload, discountType, discountAmount: value },
+    });
+    return getPendingInvoiceById(pendingId);
+}

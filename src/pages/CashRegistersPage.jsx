@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useShop } from "../context/ShopContext";
 import { listRegisters, getCashStatus, createRegister } from "../services/cashService";
-import { ArrowLeft, Landmark, TrendingDown, Store } from "lucide-react";
+import { ArrowLeft, Store } from "lucide-react";
 
 const currencyFormatter = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "XAF", maximumFractionDigits: 0 });
 
 export default function CashRegistersPage() {
   const navigate = useNavigate();
-  const { selectedShopId: shopId } = useShop();
+  const { selectedShopId: shopId, selectedShopName } = useShop();
   const [registers, setRegisters] = useState([]);
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -114,30 +114,6 @@ export default function CashRegistersPage() {
 
             {/* Dashboard Grid (Bento style) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              {/* Summary Card - Solde Total Attendu - Bientôt disponible */}
-              <div className="bg-white border border-[#DCE4DE] rounded-xl p-4 flex flex-col justify-between h-32 opacity-70">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#3e4943]">Solde Total Attendu</span>
-                  <Landmark size={20} />
-                  <span className="text-xs bg-[#ffddb9] text-[#663e00] px-2 py-0.5 rounded-full ml-2">Bientôt disponible</span>
-                </div>
-                <div className="text-3xl font-medium text-[#141e1a] font-mono">
-                  --- <span className="text-lg text-[#3e4943]">FCFA</span>
-                </div>
-              </div>
-
-              {/* Summary Card - Écart Jour - Bientôt disponible */}
-              <div className="bg-white border border-[#DCE4DE] rounded-xl p-4 flex flex-col justify-between h-32 opacity-70">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#3e4943]">Écart Jour</span>
-                  <TrendingDown size={20} />
-                  <span className="text-xs bg-[#ffddb9] text-[#663e00] px-2 py-0.5 rounded-full ml-2">Bientôt disponible</span>
-                </div>
-                <div className="text-3xl font-medium text-[#ba1a1a] font-mono flex items-baseline gap-1">
-                  --- <span className="text-lg">FCFA</span>
-                </div>
-              </div>
-
               {/* Summary Card - Caisses Actives */}
               <div className="bg-white border border-[#DCE4DE] rounded-xl p-4 flex flex-col justify-between h-32">
                 <div className="flex justify-between items-center">
@@ -182,7 +158,7 @@ export default function CashRegistersPage() {
                               </div>
                               <div>
                                 <div className="font-medium text-[#141e1a]">{register.label}</div>
-                                <div className="text-xs text-[#3e4943]">Boutique Centrale</div>
+                                <div className="text-xs text-[#3e4943]">{selectedShopName || "Boutique"}</div>
                               </div>
                             </div>
                           </td>
