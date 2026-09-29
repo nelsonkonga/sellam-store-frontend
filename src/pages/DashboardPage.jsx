@@ -97,7 +97,7 @@ export default function DashboardPage() {
   const criticalProducts = dashboardData?.criticalProducts || [];
 
   function getStatusBadge(status) {
-    if (!status) return <span className="px-2 py-1 rounded-[4px] bg-[#bdc9c1] text-[#3e4943] text-[10px] font-bold uppercase tracking-wider">Inconnu</span>;
+    if (!status) return <span className="px-2 py-1 rounded-[4px] bg-[#bdc9c1] text-[#3e4943] text-[10px] font-bold uppercase tracking-wider">Aucune session</span>;
     
     switch (status) {
       case "OPEN":
@@ -159,16 +159,19 @@ export default function DashboardPage() {
                 icon={Wallet}
                 label="Ventes du jour"
                 value={currencyFormatter.format(totalSalesToday)}
+                unit=""
               />
               <SummaryCard
                 icon={TrendingUp}
                 label="Bénéfice"
                 value={currencyFormatter.format(totalMarginToday)}
+                unit=""
               />
               <SummaryCard
                 icon={ShoppingBag}
                 label="Panier moyen"
                 value={currencyFormatter.format(averageBasket)}
+                unit=""
               />
               <SummaryCard icon={Cloud} label="Synchronisation" value={pendingInvoices.length > 0 ? String(pendingInvoices.length) : "Ok"} unit={pendingInvoices.length > 0 ? "Factures en attente" : "Données à jour"} />
             </div>

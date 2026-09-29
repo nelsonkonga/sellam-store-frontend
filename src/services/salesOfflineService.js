@@ -1,6 +1,20 @@
 import { v4 as uuidv4 } from 'uuid';
 import db from '../db/localDb.js';
 import api from './api';
+import { getProductById } from './productService';
+
+async function resolveLocalProduct(productId) {
+    const cached = await db.products.get(productId);
+    if (cached) return cached;
+    if (!navigator.onLine) return null;
+    try {
+        const product = await getProductById(productId);
+        if (product) await db.products.put(product);
+        return product;
+    } catch {
+        return null;
+    }
+}
 
 async function getCurrentUserId() {
     // Récupérer l'ID utilisateur depuis localStorage
@@ -15,7 +29,7 @@ export async function saveInvoiceOfflineFirst(shopId, invoiceData) {
 
     // 1. Validate stock locally
     for (const line of invoiceData.lines) {
-        const product = await db.products.get(line.productId);
+        const product = await resolveLocalProduct(line.productId);
         if (!product) throw new Error(`Produit introuvable localement (ID: ${line.productId})`);
         if (product.stockQuantity < line.quantity) {
             throw new Error(`Stock insuffisant pour ${product.name}`);
@@ -24,7 +38,7 @@ export async function saveInvoiceOfflineFirst(shopId, invoiceData) {
 
     // 2. Decrement stock locally
     for (const line of invoiceData.lines) {
-        const product = await db.products.get(line.productId);
+        const product = await resolveLocalProduct(line.productId);
         await db.products.update(line.productId, {
             stockQuantity: product.stockQuantity - line.quantity
         });

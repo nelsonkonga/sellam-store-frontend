@@ -114,6 +114,7 @@ export default function AuthPage({ mode: initialMode = MODES.LOGIN }) {
                 onChange={update}
                 placeholder="Ex: AB3D9F2K"
                 autoComplete="off"
+                required={false}
               />
             )}
 

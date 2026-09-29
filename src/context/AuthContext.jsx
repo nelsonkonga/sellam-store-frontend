@@ -89,9 +89,9 @@ export function AuthProvider({ children }) {
 
 
   const isTokenExpired = useCallback(() => {
-    if (!tokenExpiresAt) return true;
+    if (!token || !tokenExpiresAt) return false;
     return Date.now() > tokenExpiresAt;
-  }, [tokenExpiresAt]);
+  }, [token, tokenExpiresAt]);
 
   const markEmailVerified = useCallback(() => {
       localStorage.setItem(STORAGE_KEYS.emailVerified, "true");
