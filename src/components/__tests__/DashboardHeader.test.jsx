@@ -29,7 +29,7 @@ describe('DashboardHeader', () => {
       </MemoryRouter>
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /service client/i }));
+    fireEvent.click(screen.getByRole('button', { name: /aide/i }));
 
     expect(navigateMock).toHaveBeenCalledWith('/support');
   });
