@@ -3,6 +3,7 @@ import { getCacheKey, getCachedResponse, setCachedResponse, clearOfflineCache } 
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:8080/api",
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
     "ngrok-skip-browser-warning": "true",
@@ -44,14 +45,17 @@ api.interceptors.response.use(
     },
     (error) => {
       if (error.response?.status === 401) {
+        const url = error.config?.url || "";
+        if (url.includes("/auth/me") || url.includes("/auth/login") || url.includes("/auth/register")) {
+          return Promise.reject(error);
+        }
         onUnauthorized();
-        // Le cache offline peut contenir des données propres au compte qui vient
-        // d'être déconnecté (produits, factures...) ; on l'efface pour éviter
-        // qu'un prochain utilisateur du même appareil hors ligne ne les voie.
         clearOfflineCache();
 
+        const reason = error.response?.data?.message || "Votre session a expiré. Reconnectez-vous.";
         if (window.location.pathname !== "/login") {
-          window.location.href = "/login";
+          const params = new URLSearchParams({ reason: "expired", message: reason });
+          window.location.href = `/login?${params.toString()}`;
         }
         return Promise.reject(error);
       }

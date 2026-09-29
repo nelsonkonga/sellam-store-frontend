@@ -26,13 +26,15 @@ export default function WelcomeTrialModal() {
   const [trialEndsAt, setTrialEndsAt] = useState(null);
 
   useEffect(() => {
-    if (!location.state?.justRegistered) return;
+    if (location.state?.justRegistered) {
+      sessionStorage.setItem("sellam-just-registered", "1");
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, location.pathname, navigate]);
 
-    // Consomme le flag tout de suite pour qu'il ne survive pas à un refresh
-    // ou à un retour arrière du navigateur.
-    navigate(location.pathname, { replace: true, state: {} });
-
-    if (!shopId) return;
+  useEffect(() => {
+    if (!shopId || sessionStorage.getItem("sellam-just-registered") !== "1") return;
+    sessionStorage.removeItem("sellam-just-registered");
 
     getSubscription(shopId)
       .then((data) => {

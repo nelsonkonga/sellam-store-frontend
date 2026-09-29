@@ -73,6 +73,7 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,json}'],
         cleanupOutdatedCaches: true,
+        importScripts: ["push-handler.js"],
         runtimeCaching: [
           {
             urlPattern: ({ url }) => url.origin === self.location.origin && /\/api\//i.test(url.pathname),
@@ -82,6 +83,10 @@ export default defineConfig({
               networkTimeoutSeconds: 10,
               cacheableResponse: {
                 statuses: [0, 200]
+              },
+              expiration: {
+                maxEntries: 80,
+                maxAgeSeconds: 60 * 60 * 24 * 7
               }
             }
           },

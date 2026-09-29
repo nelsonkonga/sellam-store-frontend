@@ -46,7 +46,7 @@ export function AuthProvider({ children }) {
       const decoded = jwtDecode(token);
       const expiresAt = decoded.exp * 1000; // conversion en millisecondes pour Date.now()
 
-      localStorage.setItem(STORAGE_KEYS.token, token);
+      localStorage.removeItem(STORAGE_KEYS.token);
       localStorage.setItem(STORAGE_KEYS.accountId, accountId);
       localStorage.setItem(STORAGE_KEYS.userType, userType || "ACCOUNT");
       if (shopId) localStorage.setItem(STORAGE_KEYS.shopId, shopId);
@@ -71,6 +71,9 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(() => {
+      import("../services/api").then(({ default: api }) => {
+        api.post("/auth/logout").catch(() => {});
+      });
       Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
       setToken(null);
       setAccountId(null);
@@ -98,6 +101,19 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     registerAuthAccessors({ token, logout, isTokenExpired });
   }, [token, logout, isTokenExpired]);
+
+  useEffect(() => {
+    if (token) return undefined;
+    let cancelled = false;
+    import("../services/api").then(({ default: api }) => api.get("/auth/me"))
+      .then(({ data }) => {
+        if (!cancelled && data?.token) login(data);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [login, token]);
 
   const isManager = userType === "ACCOUNT";
   const isEmployee = userType === "USER";

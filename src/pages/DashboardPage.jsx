@@ -170,7 +170,7 @@ export default function DashboardPage() {
                 label="Panier moyen"
                 value={currencyFormatter.format(averageBasket)}
               />
-              <SummaryCard icon={Cloud} label="Synchronisation" value="Ok" unit="Données à jour" />
+              <SummaryCard icon={Cloud} label="Synchronisation" value={pendingInvoices.length > 0 ? String(pendingInvoices.length) : "Ok"} unit={pendingInvoices.length > 0 ? "Factures en attente" : "Données à jour"} />
             </div>
 
             <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
