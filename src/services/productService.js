@@ -1,4 +1,5 @@
 import api from "./api";
+import { compressImageFile } from "../utils/compressImage";
 
 export async function getSaleTypes(shopId) {
   const response = await api.get("/sale-types", { params: { shopId } });
@@ -67,8 +68,9 @@ export async function updateProduct(id, data) {
  * @param {File} file
  */
 export async function uploadProductPicture(productId, file) {
+  const prepared = await compressImageFile(file, "product");
   const formData = new FormData();
-  formData.append("picture", file);
+  formData.append("picture", prepared);
   const response = await api.post(`/products/${productId}/picture`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });

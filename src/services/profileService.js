@@ -1,4 +1,5 @@
 import api from "./api";
+import { compressImageFile } from "../utils/compressImage";
 
 /**
  * Met à jour la photo de profil de l'utilisateur.
@@ -6,8 +7,9 @@ import api from "./api";
  * @param {File} file
  */
 export async function updateProfilePicture(file) {
+  const prepared = await compressImageFile(file, "profile");
   const formData = new FormData();
-  formData.append("picture", file);
+  formData.append("picture", prepared);
   const response = await api.put("/profile/picture", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });

@@ -1,4 +1,5 @@
 import api from "./api";
+import { compressImageFile } from "../utils/compressImage";
 
 /**
  * Récupère la liste des boutiques du compte connecté.
@@ -36,8 +37,9 @@ export async function updateShopSettings(shopId, settings) {
 
 
 export async function uploadShopLogo(shopId, file) {
+  const prepared = await compressImageFile(file, "logo");
   const formData = new FormData();
-  formData.append("file", file);
+  formData.append("file", prepared);
 
   const response = await api.post(`/shops/${shopId}/logo`, formData, {
     headers: { "Content-Type": "multipart/form-data" },

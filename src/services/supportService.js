@@ -1,4 +1,5 @@
 import api from './api';
+import { compressImageFile } from '../utils/compressImage';
 
 const supportService = {
   // User Actions
@@ -8,8 +9,9 @@ const supportService = {
   },
 
   uploadAttachment: async (file, ticketId) => {
+    const prepared = await compressImageFile(file, 'attachment');
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', prepared);
     if (ticketId) formData.append('ticketId', ticketId);
     const response = await api.post('/support/attachments', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
