@@ -18,6 +18,9 @@ import { useAuth } from "../context/AuthContext";
 import { useShop } from "../context/ShopContext";
 import SyncStatus from "./SyncStatus";
 import WelcomeTrialModal from "./WelcomeTrialModal";
+import GuidedTour from "./GuidedTour";
+import api from "../services/api";
+import { useEffect, useState } from "react";
 import SubscriptionWarningBanner from "./SubscriptionWarningBanner";
 import BottomNav from "./BottomNav";
 
@@ -38,9 +41,11 @@ const managementLinks = [
 ];
 
 function ShellLink({ to, label, Icon }) {
+  const tour = to === "/products" ? "products" : to === "/sales/new" ? "sale" : to === "/invoices" ? "invoices" : to === "/employees" ? "team" : undefined;
   return (
     <NavLink 
-      to={to} 
+      to={to}
+      data-tour={tour} 
       className={({ isActive }) => 
         `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
           isActive 
@@ -57,12 +62,29 @@ function ShellLink({ to, label, Icon }) {
 
 export default function AppShell({ children }) {
   const { isManager, name, logout } = useAuth();
-  const { selectedShopName } = useShop();
+  const { selectedShopName, selectedShopId } = useShop();
+  const [canViewReports, setCanViewReports] = useState(isManager);
   const location = useLocation();
   const navigate = useNavigate();
   
   // Filtre les liens selon le rôle
-  const links = [...operationalLinks, ...managementLinks].filter(([, , , managerOnly]) => !managerOnly || isManager);
+  useEffect(() => {
+    if (isManager) {
+      setCanViewReports(true);
+      return undefined;
+    }
+    if (!selectedShopId) return undefined;
+    api.get(`/identity/memberships/shop/${selectedShopId}`)
+      .then(({ data }) => setCanViewReports((data.effectivePermissions || []).includes("VIEW_REPORTS")))
+      .catch(() => setCanViewReports(false));
+    return undefined;
+  }, [isManager, selectedShopId]);
+
+  const links = [...operationalLinks, ...managementLinks].filter((item) => {
+    const [to, , , managerOnly] = item;
+    if (to === "/reports") return canViewReports;
+    return !managerOnly || isManager;
+  });
 
   return (
     <div className="min-h-screen bg-[var(--bg-page)] text-[var(--text-primary)]">
@@ -70,9 +92,10 @@ export default function AppShell({ children }) {
           montée ici (haut de l'arbre) pour être disponible sur toutes les pages
           protégées sans avoir à la répéter page par page. */}
       <WelcomeTrialModal />
+      <GuidedTour />
 
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-[248px] flex-col overflow-y-auto border-r border-[var(--border-soft)] bg-white px-4 py-6 lg:flex">
-        <button type="button" onClick={() => navigate("/dashboard")} className="mb-7 flex items-center gap-3 px-2 text-left">
+        <button type="button" data-tour="shop" onClick={() => navigate("/dashboard")} className="mb-7 flex items-center gap-3 px-2 text-left">
           <img 
    src="/sellam-logo.png" 
    alt="Logo Sellam" 
