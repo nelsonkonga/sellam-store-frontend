@@ -2,12 +2,14 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useChatService from '../hooks/useChatService';
 import { useAuth } from '../context/AuthContext';
+import { useShop } from '../context/ShopContext';
 import { Send, AlertCircle, Loader, MessageSquare } from 'lucide-react';
 
 const ChatPage = () => {
   const { accountId } = useAuth();
+  const { selectedShopId, selectedShopName } = useShop();
   const navigate = useNavigate();
-  const conversationId = new URLSearchParams(window.location.search).get('id') || 'general';
+  const conversationId = selectedShopId;
   const { messages, isConnected, error, sendMessage } = useChatService(conversationId);
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef(null);
@@ -32,7 +34,7 @@ const ChatPage = () => {
       {/* Header */}
       <div className="border-b border-[#bdc9c1] bg-white p-5 shadow-sm">
         <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#006547]">Espace / Support</p><h1 className="font-display text-2xl font-semibold text-[#141e1a]">
-          Chat - {conversationId}
+          Chat — {selectedShopName || 'Boutique'}
         </h1>
         <div className="flex items-center gap-2 mt-2">
           <div
