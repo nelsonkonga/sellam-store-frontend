@@ -67,7 +67,7 @@ export default function CashRegistersPage() {
   }
 
   function getStatusBadge(status) {
-    if (!status) return <span className="px-2 py-1 rounded-[4px] bg-[#bdc9c1] text-[#3e4943] text-[10px] font-bold uppercase tracking-wider">Inconnu</span>;
+    if (!status) return <span className="px-2 py-1 rounded-[4px] bg-[#bdc9c1] text-[#3e4943] text-[10px] font-bold uppercase tracking-wider">Aucune session</span>;
     
     switch (status) {
       case "OPEN":

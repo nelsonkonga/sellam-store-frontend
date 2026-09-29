@@ -177,6 +177,7 @@ export default function ProductDetailPage() {
   function validate() {
     const errors = {};
     if (!form.name.trim()) errors.name = "Le nom est obligatoire.";
+    if (!form.category.trim()) errors.category = "La catégorie est obligatoire.";
     if (form.purchasePrice === "" || Number(form.purchasePrice) < 0)
       errors.purchasePrice = "Le prix d'achat est obligatoire.";
     if (!form.saleTypeId)
@@ -244,6 +245,8 @@ export default function ProductDetailPage() {
         );
       } else if (status === 401) {
         setError("Votre session a expiré. Reconnectez-vous pour enregistrer ce produit.");
+      } else if (backendMessage === "Validation failed") {
+        setError("Certaines informations obligatoires manquent. Indiquez au moins la catégorie.");
       } else {
         setError(backendMessage || "Impossible d'enregistrer le produit.");
       }
@@ -437,6 +440,11 @@ export default function ProductDetailPage() {
                     <option key={cat} value={cat} />
                   ))}
                 </datalist>
+                {fieldErrors.category && (
+                  <p className="mt-1 text-xs font-medium text-red-500">
+                    {fieldErrors.category}
+                  </p>
+                )}
               </div>
 
               <div className="flex flex-col gap-1.5">

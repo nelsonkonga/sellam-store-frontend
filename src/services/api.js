@@ -21,12 +21,26 @@ export function registerAuthAccessors({ token, logout, isTokenExpired }) {
 }
 
 api.interceptors.request.use((config) => {
-  const isAuthRoute = config.url?.includes('/auth/login') || config.url?.includes('/auth/register');
+  const url = config.url || "";
+  const isAuthRoute = url.includes("/auth/login")
+    || url.includes("/auth/register")
+    || url.includes("/auth/me")
+    || url.includes("/auth/forgot")
+    || url.includes("/auth/reset")
+    || url.includes("/auth/logout");
 
-  if (!isAuthRoute && isTokenExpiredFn()) {
+  // Sans jeton, l'absence de date d'expiration ne signifie pas qu'une session
+  // est périmée. Sinon le rétablissement via /auth/me recharge /login en boucle.
+  if (!isAuthRoute && currentToken && isTokenExpiredFn()) {
     onUnauthorized();
-    window.location.href = '/login?reason=expired';
-    return Promise.reject(new Error('Token expiré'));
+    if (window.location.pathname !== "/login") {
+      const params = new URLSearchParams({
+        reason: "expired",
+        message: "Votre session a expiré. Reconnectez-vous.",
+      });
+      window.location.href = `/login?${params.toString()}`;
+    }
+    return Promise.reject(new Error("Token expiré"));
   }
 
   if (currentToken) {
