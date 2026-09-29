@@ -3,51 +3,45 @@
  * Tests pour l'enregistrement des ventes
  */
 
-import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import NewSalePage from '../pages/NewSalePage';
-import * as productService from '../services/productService';
-import * as invoiceService from '../services/invoiceService';
+import NewSalePage from '../../pages/NewSalePage';
+import { getProducts } from '../../services/productService';
 
-// Mock des services
-vi.mock('../services/productService');
-vi.mock('../services/invoiceService');
-vi.mock('../context/ShopContext');
-vi.mock('../context/AuthContext');
+vi.mock('../../services/productService', () => ({
+  getProducts: vi.fn(),
+  getProductByBarcode: vi.fn(),
+}));
 
-const mockShopContext = {
-  selectedShopId: 'shop-123',
-  selectedShop: { id: 'shop-123', name: 'Test Boutique' },
-};
+vi.mock('../../services/salesOfflineService', () => ({
+  saveInvoiceOfflineFirst: vi.fn(),
+}));
 
-const mockAuthContext = {
-  isAuthenticated: true,
-};
+vi.mock('../../context/ShopContext', () => ({
+  useShop: () => ({
+    selectedShopId: 'shop-123',
+    selectedShop: { id: 'shop-123', name: 'Test Boutique' },
+  }),
+}));
+
+const searchPlaceholder = 'Rechercher (ou scanner code-barre)...';
 
 describe('NewSalePage', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    // Mock du contexte Shop
-    require('../context/ShopContext').useShop = () => mockShopContext;
-    // Mock du contexte Auth
-    require('../context/AuthContext').useAuth = () => mockAuthContext;
+    vi.clearAllMocks();
   });
 
   it('devrait afficher le titre "Nouvelle vente"', async () => {
-    productService.getProducts.mockResolvedValue([]);
-    invoiceService.createInvoice.mockResolvedValue({ id: 'inv-123' });
+    getProducts.mockResolvedValue([]);
 
     render(
-      <BrowserRouter>
+      <MemoryRouter>
         <NewSalePage />
-      </BrowserRouter>
+      </MemoryRouter>
     );
 
-    await waitFor(() => {
-      expect(screen.getByText('Nouvelle vente')).toBeInTheDocument();
-    });
+    expect(await screen.findByText('Nouvelle vente')).toBeInTheDocument();
   });
 
   it('devrait charger les produits au montage', async () => {
@@ -55,33 +49,29 @@ describe('NewSalePage', () => {
       { id: 1, name: 'Coca-Cola 33cl', sellingPrice: 500, stockQuantity: 50 },
       { id: 2, name: 'Pain de mie', sellingPrice: 1500, stockQuantity: 20 },
     ];
-    productService.getProducts.mockResolvedValue(mockProducts);
-    invoiceService.createInvoice.mockResolvedValue({ id: 'inv-123' });
+    getProducts.mockResolvedValue(mockProducts);
 
     render(
-      <BrowserRouter>
+      <MemoryRouter>
         <NewSalePage />
-      </BrowserRouter>
+      </MemoryRouter>
     );
 
     await waitFor(() => {
-      expect(productService.getProducts).toHaveBeenCalledWith('shop-123');
+      expect(getProducts).toHaveBeenCalledWith('shop-123');
     });
   });
 
   it('devrait afficher la barre de recherche', async () => {
-    productService.getProducts.mockResolvedValue([]);
-    invoiceService.createInvoice.mockResolvedValue({ id: 'inv-123' });
+    getProducts.mockResolvedValue([]);
 
     render(
-      <BrowserRouter>
+      <MemoryRouter>
         <NewSalePage />
-      </BrowserRouter>
+      </MemoryRouter>
     );
 
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText('Rechercher un produit...')).toBeInTheDocument();
-    });
+    expect(await screen.findByPlaceholderText(searchPlaceholder)).toBeInTheDocument();
   });
 
   it('devrait filtrer les produits lors de la recherche', async () => {
@@ -89,43 +79,33 @@ describe('NewSalePage', () => {
       { id: 1, name: 'Coca-Cola 33cl', sellingPrice: 500, stockQuantity: 50 },
       { id: 2, name: 'Pain de mie', sellingPrice: 1500, stockQuantity: 20 },
     ];
-    productService.getProducts.mockResolvedValue(mockProducts);
-    invoiceService.createInvoice.mockResolvedValue({ id: 'inv-123' });
+    getProducts.mockResolvedValue(mockProducts);
 
     render(
-      <BrowserRouter>
+      <MemoryRouter>
         <NewSalePage />
-      </BrowserRouter>
+      </MemoryRouter>
     );
 
-    await waitFor(() => {
-      const searchInput = screen.getByPlaceholderText('Rechercher un produit...');
-      fireEvent.change(searchInput, { target: { value: 'Coca' } });
-    });
+    const searchInput = await screen.findByPlaceholderText(searchPlaceholder);
+    fireEvent.change(searchInput, { target: { value: 'Coca' } });
 
-    await waitFor(() => {
-      expect(screen.getByText('Coca-Cola 33cl')).toBeInTheDocument();
-      expect(screen.queryByText('Pain de mie')).not.toBeInTheDocument();
-    });
+    expect(await screen.findByText('Coca-Cola 33cl')).toBeInTheDocument();
+    expect(screen.queryByText('Pain de mie')).not.toBeInTheDocument();
   });
 
   it('devrait afficher un message si aucun produit trouvé', async () => {
-    productService.getProducts.mockResolvedValue([]);
-    invoiceService.createInvoice.mockResolvedValue({ id: 'inv-123' });
+    getProducts.mockResolvedValue([]);
 
     render(
-      <BrowserRouter>
+      <MemoryRouter>
         <NewSalePage />
-      </BrowserRouter>
+      </MemoryRouter>
     );
 
-    await waitFor(() => {
-      const searchInput = screen.getByPlaceholderText('Rechercher un produit...');
-      fireEvent.change(searchInput, { target: { value: 'Produit inexistant' } });
-    });
+    const searchInput = await screen.findByPlaceholderText(searchPlaceholder);
+    fireEvent.change(searchInput, { target: { value: 'Produit inexistant' } });
 
-    await waitFor(() => {
-      expect(screen.getByText('Aucun produit trouvé.')).toBeInTheDocument();
-    });
+    expect(await screen.findByText('Aucun produit trouvé.')).toBeInTheDocument();
   });
 });

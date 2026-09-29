@@ -3,23 +3,27 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import ShopsPage from '../ShopsPage';
 
-const mockSelectShop = vi.fn();
-const mockGetShops = vi.fn();
+const { mockSelectShop, mockGetShops, mockGetShopsSummaries } = vi.hoisted(() => ({
+  mockSelectShop: vi.fn(),
+  mockGetShops: vi.fn(),
+  mockGetShopsSummaries: vi.fn(),
+}));
 
 vi.mock('../../services/shopService', () => ({
   getShops: mockGetShops,
+  getShopsSummaries: mockGetShopsSummaries,
   createShop: vi.fn(),
   uploadShopLogo: vi.fn(),
 }));
 
 vi.mock('../../context/ShopContext', () => ({
-  useShop: () => ({ selectShop: mockSelectShop }),
+  useShop: () => ({ selectShop: mockSelectShop, selectedShopId: 'shop-1' }),
 }));
 
 describe('ShopsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockGetShops.mockResolvedValue([
+    mockGetShopsSummaries.mockResolvedValue([
       {
         id: 'shop-1',
         name: 'Boutique Principale',

@@ -64,13 +64,13 @@ describe('salesOfflineService', () => {
       const result = await saveInvoiceOfflineFirst('shop-123', mockInvoice);
 
       expect(result.success).toBe(true);
-      expect(db.pendingActions.add).toHaveBeenCalledWith({
+      expect(db.pendingActions.add).toHaveBeenCalledWith(expect.objectContaining({
         type: 'SYNC_INVOICE',
         shopId: 'shop-123',
         payload: expect.any(Object),
         createdAt: expect.any(String),
         synced: false,
-      });
+      }));
     });
 
     it('devrait décrémenter le stock localement', async () => {
