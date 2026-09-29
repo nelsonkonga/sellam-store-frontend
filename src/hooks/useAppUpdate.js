@@ -17,12 +17,10 @@ import { useEffect, useState, useCallback } from "react";
  */
 export function useAppUpdate() {
     const [updateAvailable, setUpdateAvailable] = useState(false);
-    const [waitingWorker, setWaitingWorker] = useState(null);
 
     useEffect(() => {
         if (!("serviceWorker" in navigator)) return;
-
-        let registrationRef = null;
+        if (typeof navigator.serviceWorker.getRegistration !== "function") return;
 
         function handleUpdateFound(registration) {
             const newWorker = registration.installing;
@@ -33,7 +31,6 @@ export function useAppUpdate() {
                 // (si aucun controller n'existe encore, c'est juste la toute première
                 // installation du service worker, pas une mise à jour à signaler).
                 if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-                    setWaitingWorker(newWorker);
                     setUpdateAvailable(true);
                 }
             });
@@ -41,12 +38,10 @@ export function useAppUpdate() {
 
         navigator.serviceWorker.getRegistration().then((registration) => {
             if (!registration) return;
-            registrationRef = registration;
 
             // Un service worker est peut-être déjà en attente (onglet resté ouvert
             // pendant qu'un déploiement a eu lieu et que le SW a fini de s'installer).
             if (registration.waiting && navigator.serviceWorker.controller) {
-                setWaitingWorker(registration.waiting);
                 setUpdateAvailable(true);
             }
 
@@ -57,28 +52,42 @@ export function useAppUpdate() {
             // prendre plusieurs heures selon les headers de cache de sw.js).
             registration.update().catch(() => {});
         });
-
-        return () => {
-            // Rien à nettoyer explicitement : les listeners suivent le cycle de
-            // vie de la registration, qui persiste indépendamment du composant.
-        };
     }, []);
 
     const applyUpdate = useCallback(() => {
-        if (!waitingWorker) {
+        let reloaded = false;
+        let fallbackTimer = 0;
+
+        const reload = () => {
+            if (reloaded) return;
+            reloaded = true;
+            if (fallbackTimer) window.clearTimeout(fallbackTimer);
             window.location.reload();
+        };
+
+        const activateWaitingWorker = (registration) => {
+            const worker = registration?.waiting;
+            // Déjà activé (ancienne génération autoUpdate) : rien à réveiller,
+            // un rechargement suffit pour prendre les fichiers frais.
+            if (!worker) {
+                reload();
+                return;
+            }
+            // Le listener doit être en place AVANT le message : skipWaiting
+            // peut changer le contrôleur dans le même tour.
+            navigator.serviceWorker.addEventListener("controllerchange", reload, { once: true });
+            worker.postMessage({ type: "SKIP_WAITING" });
+            // Si le worker ignore le message, le clic recharge quand même.
+            fallbackTimer = window.setTimeout(reload, 1500);
+        };
+
+        if (!("serviceWorker" in navigator) || typeof navigator.serviceWorker.getRegistration !== "function") {
+            reload();
             return;
         }
-        // Demande au nouveau service worker de prendre le contrôle immédiatement
-        // (au lieu d'attendre la fermeture de tous les onglets), puis recharge
-        // une fois le contrôle effectivement transféré.
-        waitingWorker.postMessage({ type: "SKIP_WAITING" });
-        navigator.serviceWorker.addEventListener(
-            "controllerchange",
-            () => window.location.reload(),
-            { once: true }
-        );
-    }, [waitingWorker]);
+
+        navigator.serviceWorker.getRegistration().then(activateWaitingWorker).catch(reload);
+    }, []);
 
     return { updateAvailable, applyUpdate };
 }

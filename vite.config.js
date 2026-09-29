@@ -7,7 +7,11 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt' : le nouveau service worker reste en attente. Le bouton
+      // « Mettre à jour » lui envoie SKIP_WAITING (voir public/sw-update.js).
+      // 'autoUpdate' forçait skipWaiting et le clic n'avait plus rien à activer.
+      registerType: 'prompt',
+      injectRegister: null,
       includeAssets: ['favicon.ico', 'robots.txt', 'sellam-logo.png', 'icon-192.png', 'icon-256.png', 'icon-384.png', 'icon-512.png', 'icon-maskable.png'],
       manifest: {
         id: '/',
@@ -73,7 +77,11 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,json}'],
         cleanupOutdatedCaches: true,
-        importScripts: ["push-handler.js"],
+        skipWaiting: false,
+        clientsClaim: true,
+        navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/^\/api\//],
+        importScripts: ["push-handler.js", "sw-update.js"],
         runtimeCaching: [
           {
             urlPattern: ({ url }) => url.origin === self.location.origin && /\/api\//i.test(url.pathname),
@@ -91,7 +99,9 @@ export default defineConfig({
             }
           },
           {
-            urlPattern: ({ request }) => ['document', 'script', 'style', 'image', 'font'].includes(request.destination),
+            // Les navigations (dont /login) passent par le précache de index.html.
+            // Les inclure ici renvoyait la 404 réseau de Vercel telle quelle.
+            urlPattern: ({ request }) => ['script', 'style', 'image', 'font'].includes(request.destination),
             handler: 'NetworkFirst',
             options: {
               cacheName: 'sellam-assets-cache',
